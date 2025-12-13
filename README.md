@@ -1,4 +1,4 @@
-# Gemini Reader
+# EPUB Reader
 
 A modern, web-based EPUB reader with a lightweight Python server backend.
 

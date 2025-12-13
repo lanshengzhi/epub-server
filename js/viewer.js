@@ -1,4 +1,11 @@
 document.addEventListener('DOMContentLoaded', async () => {
+    const t = window.I18N?.t
+        ? window.I18N.t
+        : (key, vars) => {
+            if (!vars) return key;
+            return String(key).replace(/\{(\w+)\}/g, (_, k) => (vars[k] === undefined ? '' : String(vars[k])));
+        };
+
     // --- Helper: Fetch Asset (Server) ---
     async function fetchAsset(url) {
         return fetch(url);
@@ -8,7 +15,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const bookDir = params.get('book');
     
     if (!bookDir) {
-        alert('No book specified.');
+        alert(t('reader.no_book_specified'));
         window.location.href = 'index.html';
         return;
     }
@@ -91,6 +98,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     let currentMaxWidth = parseInt(localStorage.getItem('maxWidth')) || 800;
     let currentFontProfile = localStorage.getItem('fontProfile') || 'serif';
 
+    function updateFontChangeTitle() {
+        const fontChangeBtn = document.getElementById('font-change');
+        if (!fontChangeBtn) return;
+        fontChangeBtn.title = t('reader.change_font_current', { profile: currentFontProfile });
+    }
+
     // --- 1. Load Book Data (Spine & TOC) ---
     async function loadToc() {
         try {
@@ -146,7 +159,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
             
             if (spineItems.length === 0) {
-                contentViewer.innerHTML = '<p style="color:red; padding:20px;">Error: No chapters found.</p>';
+                contentViewer.innerHTML = `<p style="color:red; padding:20px;">${t('reader.no_chapters_error')}</p>`;
                 return;
             }
 
@@ -166,7 +179,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         } catch (e) {
             console.error(e);
-            contentViewer.innerHTML = `<p style="padding:20px; color:red">Error loading book: ${e.message}</p>`;
+            contentViewer.innerHTML = `<p style="padding:20px; color:red">${t('reader.error_loading_book', { message: e.message })}</p>`;
         }
     }
 
@@ -315,7 +328,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         } catch (e) {
             console.error(e);
-            contentViewer.innerHTML = `<div style="padding:20px; color:red">Error: ${e.message}</div>`;
+            contentViewer.innerHTML = `<div style="padding:20px; color:red">${t('reader.error_generic', { message: e.message })}</div>`;
         } finally {
             contentViewer.style.opacity = '1';
             updateButtons();
@@ -484,7 +497,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         marginIncreaseBtn.onclick = () => {
             currentMaxWidth = Math.max(MIN_MAX_WIDTH, currentMaxWidth - WIDTH_STEP);
             localStorage.setItem('maxWidth', currentMaxWidth);
-            showToast(`Width: ${currentMaxWidth}px`);
+            showToast(t('reader.width_toast', { px: currentMaxWidth }));
             applySettings();
         };
     }
@@ -494,7 +507,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         marginDecreaseBtn.onclick = () => {
             currentMaxWidth = Math.min(MAX_MAX_WIDTH, currentMaxWidth + WIDTH_STEP);
             localStorage.setItem('maxWidth', currentMaxWidth);
-            showToast(`Width: ${currentMaxWidth}px`);
+            showToast(t('reader.width_toast', { px: currentMaxWidth }));
             applySettings();
         };
     }
@@ -507,14 +520,17 @@ document.addEventListener('DOMContentLoaded', async () => {
             const nextIndex = currentIndex === -1 ? 0 : (currentIndex + 1) % fontProfiles.length;
             currentFontProfile = fontProfiles[nextIndex];
             localStorage.setItem('fontProfile', currentFontProfile);
-            fontChangeBtn.title = `Change Font (Current: ${currentFontProfile})`;
-            showToast(`Font: ${currentFontProfile}`);
+            updateFontChangeTitle();
+            showToast(t('reader.font_toast', { profile: currentFontProfile }));
             applySettings();
         };
-        fontChangeBtn.title = `Change Font (Current: ${currentFontProfile})`;
+        updateFontChangeTitle();
     }
 
     // Initial Load
+    window.addEventListener('ui-language-changed', () => {
+        updateFontChangeTitle();
+    });
     applySettings();
     loadToc();
 });

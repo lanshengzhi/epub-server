@@ -92,6 +92,22 @@ a { text-decoration: none; color: inherit; }
     gap: 10px;
 }
 
+.lang-select {
+    padding: 6px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    font-size: 0.9rem;
+    cursor: pointer;
+    height: 36px;
+}
+
+.lang-select:focus {
+    outline: 2px solid rgba(59, 130, 246, 0.35);
+    outline-offset: 2px;
+}
+
 .book-title {
     font-size: 1.1rem;
     font-weight: 600;

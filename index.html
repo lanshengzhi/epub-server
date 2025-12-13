@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gemini Reader Library</title>
+    <title data-i18n="library.page_title">EPUB Reader Library</title>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 </head>
@@ -11,14 +11,15 @@
 
     <header class="app-header">
         <div class="header-left">
-            <h1><i class="fas fa-book-open"></i> Gemini Reader</h1>
+            <h1><i class="fas fa-book-open"></i> <span data-i18n="app.name">EPUB Reader</span></h1>
         </div>
         <div class="header-right">
+            <select id="lang-select" class="lang-select" data-i18n-aria-label="common.language"></select>
             <input type="file" id="file-input" accept=".epub" style="display: none;">
-            <button id="import-btn" class="icon-btn" title="Import EPUB">
+            <button id="import-btn" class="icon-btn" data-i18n-title="library.import_epub" title="Import EPUB">
                 <i class="fas fa-upload"></i>
             </button>
-            <button id="theme-toggle" class="icon-btn" aria-label="Toggle Dark Mode">
+            <button id="theme-toggle" class="icon-btn" data-i18n-aria-label="library.toggle_dark_mode" aria-label="Toggle Dark Mode">
                 <i class="fas fa-moon"></i>
             </button>
         </div>
@@ -27,26 +28,26 @@
     <main class="library-container">
         <aside class="library-sidebar">
             <div class="sidebar-header">
-                <h3><i class="fas fa-tags"></i> Categories</h3>
+                <h3><i class="fas fa-tags"></i> <span data-i18n="library.categories">Categories</span></h3>
             </div>
             <ul id="category-list">
                 <!-- Categories injected here -->
-                <li class="active" data-category="all">All Books <span class="count"></span></li>
+                <li class="active" data-category="all"><span data-i18n="library.all_books">All Books</span> <span class="count"></span></li>
             </ul>
         </aside>
 
         <div class="library-content">
             <div class="library-controls">
                 <div class="sort-controls">
-                    <label for="sort-select">Sort by:</label>
+                    <label for="sort-select" data-i18n="library.sort_by">Sort by:</label>
                     <select id="sort-select">
-                        <option value="title">Title</option>
-                        <option value="author">Author</option>
+                        <option value="title" data-i18n="library.sort_title">Title</option>
+                        <option value="author" data-i18n="library.sort_author">Author</option>
                     </select>
                 </div>
                 <div class="view-controls">
-                    <button id="view-grid" class="icon-btn active" title="Grid View"><i class="fas fa-th-large"></i></button>
-                    <button id="view-list" class="icon-btn" title="List View"><i class="fas fa-list"></i></button>
+                    <button id="view-grid" class="icon-btn active" data-i18n-title="library.view_grid" title="Grid View"><i class="fas fa-th-large"></i></button>
+                    <button id="view-list" class="icon-btn" data-i18n-title="library.view_list" title="List View"><i class="fas fa-list"></i></button>
                 </div>
             </div>
 
@@ -59,27 +60,27 @@
     <!-- Import Options Modal -->
     <div id="import-options-modal" class="modal">
         <div class="modal-content">
-            <h3>Import Options</h3>
-            <p>Selected File: <span id="import-filename" style="font-weight: bold;"></span></p>
+            <h3 data-i18n="library.import_options">Import Options</h3>
+            <p><span data-i18n="library.selected_file">Selected File:</span> <span id="import-filename" style="font-weight: bold;"></span></p>
             
             <div class="tag-input-container" style="margin-top: 15px;">
-                <input type="text" id="import-new-tag-input" placeholder="Add a category tag (e.g., 文学)...">
-                <button id="import-add-tag-btn" class="nav-btn">Add</button>
+                <input type="text" id="import-new-tag-input" data-i18n-placeholder="library.add_category_tag_placeholder" placeholder="Add a category tag (e.g., 文学)...">
+                <button id="import-add-tag-btn" class="nav-btn" data-i18n="common.add">Add</button>
             </div>
 
-            <label style="font-size: 0.9rem; color: var(--text-muted); display: block; margin-bottom: 5px;">Selected:</label>
+            <label style="font-size: 0.9rem; color: var(--text-muted); display: block; margin-bottom: 5px;" data-i18n="common.selected">Selected:</label>
             <div id="import-active-tags" class="tags-container">
                 <!-- Selected tags will be injected here -->
             </div>
 
-            <label style="font-size: 0.9rem; color: var(--text-muted); display: block; margin: 15px 0 5px;">Suggested Tags:</label>
+            <label style="font-size: 0.9rem; color: var(--text-muted); display: block; margin: 15px 0 5px;" data-i18n="library.suggested_tags">Suggested Tags:</label>
             <div id="import-suggested-tags" class="tags-container" style="background: transparent; border: none; padding: 0; min-height: auto;">
                 <!-- Suggested tags will be injected here -->
             </div>
             
             <div class="modal-footer">
-                <button id="cancel-import-btn" class="nav-btn">Cancel</button>
-                <button id="confirm-upload-btn" class="nav-btn primary">Upload</button>
+                <button id="cancel-import-btn" class="nav-btn" data-i18n="common.cancel">Cancel</button>
+                <button id="confirm-upload-btn" class="nav-btn primary" data-i18n="common.upload">Upload</button>
             </div>
         </div>
     </div>
@@ -87,41 +88,42 @@
     <!-- Upload Progress Modal -->
     <div id="upload-modal" class="modal">
         <div class="modal-content">
-            <h3>Importing Book...</h3>
-            <div id="upload-status">Uploading and processing...</div>
+            <h3 data-i18n="library.importing_book">Importing Book...</h3>
+            <div id="upload-status" data-i18n="library.uploading_and_processing">Uploading and processing...</div>
             <div id="upload-logs" class="logs-container"></div>
-            <button id="close-modal" style="display:none; margin-top: 10px; padding: 10px; background: var(--primary-color); color: white; border-radius: 6px;">Close</button>
+            <button id="close-modal" data-i18n="common.close" style="display:none; margin-top: 10px; padding: 10px; background: var(--primary-color); color: white; border-radius: 6px;">Close</button>
         </div>
     </div>
 
     <!-- Edit Categories Modal -->
     <div id="category-modal" class="modal">
         <div class="modal-content">
-            <h3>Edit Categories</h3>
+            <h3 data-i18n="library.edit_categories">Edit Categories</h3>
             <p id="cat-book-title" style="margin-bottom: 15px; color: var(--text-muted);"></p>
             
             <div class="tag-input-container">
-                <input type="text" id="new-tag-input" placeholder="Add a category...">
-                <button id="add-tag-btn" class="nav-btn">Add</button>
+                <input type="text" id="new-tag-input" data-i18n-placeholder="library.add_category_placeholder" placeholder="Add a category...">
+                <button id="add-tag-btn" class="nav-btn" data-i18n="common.add">Add</button>
             </div>
             
-            <label style="font-size: 0.9rem; color: var(--text-muted); display: block; margin-bottom: 5px;">Selected:</label>
+            <label style="font-size: 0.9rem; color: var(--text-muted); display: block; margin-bottom: 5px;" data-i18n="common.selected">Selected:</label>
             <div id="active-tags" class="tags-container">
                 <!-- Tags will be injected here -->
             </div>
 
-            <label style="font-size: 0.9rem; color: var(--text-muted); display: block; margin: 15px 0 5px;">Available Tags:</label>
+            <label style="font-size: 0.9rem; color: var(--text-muted); display: block; margin: 15px 0 5px;" data-i18n="library.available_tags">Available Tags:</label>
             <div id="suggested-tags" class="tags-container" style="background: transparent; border: none; padding: 0; min-height: auto;">
                 <!-- Existing tags will be injected here -->
             </div>
 
             <div class="modal-footer">
-                <button id="close-cat-modal" class="nav-btn">Cancel</button>
-                <button id="save-tags-btn" class="nav-btn primary">Save</button>
+                <button id="close-cat-modal" class="nav-btn" data-i18n="common.cancel">Cancel</button>
+                <button id="save-tags-btn" class="nav-btn primary" data-i18n="common.save">Save</button>
             </div>
         </div>
     </div>
 
+    <script src="js/i18n.js"></script>
     <script src="js/library.js"></script>
 </body>
 </html>

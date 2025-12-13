@@ -1,4 +1,11 @@
 document.addEventListener('DOMContentLoaded', () => {
+    const t = window.I18N?.t
+        ? window.I18N.t
+        : (key, vars) => {
+            if (!vars) return key;
+            return String(key).replace(/\{(\w+)\}/g, (_, k) => (vars[k] === undefined ? '' : String(vars[k])));
+        };
+
     const bookList = document.getElementById('book-list');
     const themeToggle = document.getElementById('theme-toggle');
     const importBtn = document.getElementById('import-btn');
@@ -18,24 +25,25 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentView = 'grid'; // 'grid' or 'list'
     let currentSort = 'title'; // 'title' or 'author'
     let currentCategory = 'all';
+    const UNCATEGORIZED_KEY = '__uncategorized__';
 
     // Fetch and Render Books
     async function loadBooks() {
         if (window.location.protocol === 'file:') {
-             bookList.innerHTML = '<p class="error">You are viewing this file directly via file://. This application requires a web server to function correctly (due to CORS policies).<br>Please run <code>python3 server.py</code> and visit <a href="http://localhost:8000">http://localhost:8000</a>.</p>';
+             bookList.innerHTML = `<p class="error">${t('library.file_protocol_error_html')}</p>`;
              return;
         }
 
         try {
             const response = await fetch('/api/books');
-            if (!response.ok) throw new Error('Failed to fetch books: ' + response.statusText);
+            if (!response.ok) throw new Error(t('library.failed_fetch_books', { status: response.statusText }));
             booksData = await response.json();
             updateCategories();
             updateDisplay();
         } catch (error) {
             console.error('Error loading books:', error);
             // Fallback to empty or error message
-            bookList.innerHTML = `<p class="error">Could not load library. Ensure server.py is running.<br><small>${error.message}</small></p>`;
+            bookList.innerHTML = `<p class="error">${t('library.could_not_load_prefix')}<br><small>${error.message}</small></p>`;
         }
     }
 
@@ -48,7 +56,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     categories[subject] = (categories[subject] || 0) + 1;
                 });
             } else {
-                categories['Uncategorized'] = (categories['Uncategorized'] || 0) + 1;
+                categories[UNCATEGORIZED_KEY] = (categories[UNCATEGORIZED_KEY] || 0) + 1;
             }
         });
 
@@ -58,7 +66,13 @@ document.addEventListener('DOMContentLoaded', () => {
         // Add "All Books"
         const allLi = document.createElement('li');
         allLi.className = currentCategory === 'all' ? 'active' : '';
-        allLi.innerHTML = `All Books <span class="count">${booksData.length}</span>`;
+        const allLabel = document.createElement('span');
+        allLabel.textContent = t('library.all_books');
+        const allCount = document.createElement('span');
+        allCount.className = 'count';
+        allCount.textContent = String(booksData.length);
+        allLi.appendChild(allLabel);
+        allLi.appendChild(allCount);
         allLi.addEventListener('click', () => {
             currentCategory = 'all';
             updateCategories(); // Re-render to update active class
@@ -67,10 +81,21 @@ document.addEventListener('DOMContentLoaded', () => {
         categoryList.appendChild(allLi);
 
         // Add other categories
-        Object.keys(categories).sort().forEach(cat => {
+        const sortedCategories = Object.keys(categories).sort((a, b) => {
+            if (a === UNCATEGORIZED_KEY) return 1;
+            if (b === UNCATEGORIZED_KEY) return -1;
+            return a.localeCompare(b);
+        });
+        sortedCategories.forEach(cat => {
             const li = document.createElement('li');
             li.className = currentCategory === cat ? 'active' : '';
-            li.innerHTML = `${cat} <span class="count">${categories[cat]}</span>`;
+            const label = document.createElement('span');
+            label.textContent = cat === UNCATEGORIZED_KEY ? t('library.uncategorized') : cat;
+            const count = document.createElement('span');
+            count.className = 'count';
+            count.textContent = String(categories[cat]);
+            li.appendChild(label);
+            li.appendChild(count);
             li.addEventListener('click', () => {
                 currentCategory = cat;
                 updateCategories();
@@ -84,7 +109,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Filter
         let filteredBooks = booksData;
         if (currentCategory !== 'all') {
-            if (currentCategory === 'Uncategorized') {
+            if (currentCategory === UNCATEGORIZED_KEY) {
                 filteredBooks = booksData.filter(b => !b.subjects || b.subjects.length === 0);
             } else {
                 filteredBooks = booksData.filter(b => b.subjects && b.subjects.includes(currentCategory));
@@ -137,7 +162,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderBooks(books) {
         bookList.innerHTML = '';
         if (books.length === 0) {
-            bookList.innerHTML = '<p>No books found. Import one!</p>';
+            bookList.innerHTML = `<p>${t('library.no_books_found')}</p>`;
             return;
         }
 
@@ -159,10 +184,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     <h3>${book.title}</h3>
                     <p>${book.author}</p>
                 </div>
-                <button class="edit-tags-btn" data-book-dir="${book.dir}" title="Edit Categories">
+                <button class="edit-tags-btn" data-book-dir="${book.dir}" title="${t('library.edit_categories')}">
                     <i class="fas fa-tags"></i>
                 </button>
-                <button class="delete-btn" data-book-dir="${book.dir}" title="Delete Book">
+                <button class="delete-btn" data-book-dir="${book.dir}" title="${t('library.delete_book')}">
                     <i class="fas fa-trash-alt"></i>
                 </button>
             `;
@@ -185,7 +210,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 e.preventDefault(); // Prevent navigating to the book
                 e.stopPropagation(); // Stop event from bubbling up to the card's click
                 const bookDir = button.dataset.bookDir;
-                if (confirm(`Are you sure you want to delete "${decodeURIComponent(bookDir)}"? This cannot be undone.`)) {
+                if (confirm(t('library.delete_confirm', { name: decodeURIComponent(bookDir) }))) {
                     await deleteBook(bookDir);
                 }
             });
@@ -272,7 +297,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         
         if (suggestedTagsContainer.children.length === 0) {
-            suggestedTagsContainer.innerHTML = '<span style="color:var(--text-muted); font-size: 0.9rem;">No other existing tags.</span>';
+            suggestedTagsContainer.innerHTML = `<span style="color:var(--text-muted); font-size: 0.9rem;">${t('library.no_other_existing_tags')}</span>`;
         }
     }
 
@@ -315,11 +340,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     catModal.classList.remove('show');
                     loadBooks(); 
                 } else {
-                    alert('Failed to save categories.');
+                    alert(t('library.failed_save_categories'));
                 }
             } catch (e) {
                 console.error(e);
-                alert('Error saving categories.');
+                alert(t('library.error_save_categories'));
             }
         });
     }
@@ -393,7 +418,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         if (importSuggestedTagsContainer.children.length === 0) {
-            importSuggestedTagsContainer.innerHTML = '<span style="color:var(--text-muted); font-size: 0.9rem;">No other suggestions available.</span>';
+            importSuggestedTagsContainer.innerHTML = `<span style="color:var(--text-muted); font-size: 0.9rem;">${t('library.no_other_suggestions')}</span>`;
         }
     }
 
@@ -455,7 +480,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 // Start Upload Process
                 uploadLogs.innerText = '';
-                uploadStatus.innerText = 'Starting upload...';
+                uploadStatus.innerText = t('library.starting_upload');
                 closeModal.style.display = 'none';
                 uploadModal.classList.add('show');
 
@@ -480,15 +505,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
 
                     if (result.success) {
-                        uploadStatus.innerText = 'Import Successful!';
+                        uploadStatus.innerText = t('library.import_success');
                         closeModal.style.display = 'block';
                         loadBooks(); // Refresh library
                     } else {
-                        uploadStatus.innerText = 'Import Failed: ' + (result.error || 'Unknown error');
+                        uploadStatus.innerText = t('library.import_failed', { error: result.error || t('library.unknown_error') });
                         closeModal.style.display = 'block';
                     }
                 } catch (error) {
-                    uploadStatus.innerText = 'Network Error';
+                    uploadStatus.innerText = t('library.network_error');
                     uploadLogs.innerText += '\n' + error.message;
                     closeModal.style.display = 'block';
                 }
@@ -527,18 +552,22 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             if (response.ok) {
-                alert('Book deleted successfully!');
+                alert(t('library.book_deleted'));
                 loadBooks(); // Refresh the list
             } else {
                 const errorData = await response.json();
-                alert(`Failed to delete book: ${errorData.error || response.statusText}`);
+                alert(t('library.failed_delete_book', { error: errorData.error || response.statusText }));
             }
         } catch (error) {
             console.error('Error deleting book:', error);
-            alert('An error occurred while trying to delete the book.');
+            alert(t('library.error_deleting_book'));
         }
     }
 
     // Initialize
+    window.addEventListener('ui-language-changed', () => {
+        updateCategories();
+        updateDisplay();
+    });
     loadBooks();
 });
