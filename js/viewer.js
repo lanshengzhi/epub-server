@@ -417,6 +417,48 @@ document.addEventListener('DOMContentLoaded', async () => {
             img.setAttribute('loading', 'lazy');
         }
 
+        // SVG <image> can reference assets via href/xlink:href (common for cover pages)
+        const svgImages = doc.querySelectorAll('svg image');
+        for (const svgImage of svgImages) {
+            const hrefAttr =
+                svgImage.getAttribute('href') ||
+                svgImage.getAttribute('xlink:href') ||
+                svgImage.getAttributeNS('http://www.w3.org/1999/xlink', 'href');
+
+            if (
+                hrefAttr &&
+                !hrefAttr.startsWith('http') &&
+                !hrefAttr.startsWith('/') &&
+                !hrefAttr.startsWith('data:')
+            ) {
+                const fullPath = resolveBookHref(baseDir, hrefAttr);
+                if (!fullPath) continue;
+
+                if (dbManager) {
+                    let dbPath = fullPath;
+                    if (dbPath.startsWith('books/')) dbPath = decodeURIComponent(dbPath);
+                    try {
+                        const fileRecord = await dbManager.getFile(dbPath);
+                        if (fileRecord) {
+                            const blob =
+                                fileRecord.content instanceof Blob
+                                    ? fileRecord.content
+                                    : new Blob([fileRecord.content]);
+                            const objectUrl = URL.createObjectURL(blob);
+                            svgImage.setAttribute('href', objectUrl);
+                            svgImage.setAttribute('xlink:href', objectUrl);
+                            svgImage.setAttributeNS('http://www.w3.org/1999/xlink', 'href', objectUrl);
+                            continue;
+                        }
+                    } catch (e) {}
+                }
+
+                svgImage.setAttribute('href', fullPath);
+                svgImage.setAttribute('xlink:href', fullPath);
+                svgImage.setAttributeNS('http://www.w3.org/1999/xlink', 'href', fullPath);
+            }
+        }
+
         doc.querySelectorAll('link[rel="stylesheet"]').forEach(async link => {
             const href = link.getAttribute('href');
             if (href && !href.startsWith('http')) {
@@ -545,6 +587,30 @@ document.addEventListener('DOMContentLoaded', async () => {
         localStorage.setItem('fontSize', currentFontSize);
         applySettings();
     };
+
+    const MIN_MAX_WIDTH = 420;
+    const MAX_MAX_WIDTH = 1400;
+    const WIDTH_STEP = 80;
+
+    const marginIncreaseBtn = document.getElementById('margin-increase');
+    if (marginIncreaseBtn) {
+        marginIncreaseBtn.onclick = () => {
+            currentMaxWidth = Math.max(MIN_MAX_WIDTH, currentMaxWidth - WIDTH_STEP);
+            localStorage.setItem('maxWidth', currentMaxWidth);
+            showToast(`Width: ${currentMaxWidth}px`);
+            applySettings();
+        };
+    }
+
+    const marginDecreaseBtn = document.getElementById('margin-decrease');
+    if (marginDecreaseBtn) {
+        marginDecreaseBtn.onclick = () => {
+            currentMaxWidth = Math.min(MAX_MAX_WIDTH, currentMaxWidth + WIDTH_STEP);
+            localStorage.setItem('maxWidth', currentMaxWidth);
+            showToast(`Width: ${currentMaxWidth}px`);
+            applySettings();
+        };
+    }
 
     const fontProfiles = ['serif', 'sans', 'mono'];
     const fontChangeBtn = document.getElementById('font-change');
