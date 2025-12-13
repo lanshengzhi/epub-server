@@ -26,6 +26,47 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentSort = 'title'; // 'title' or 'author'
     let currentCategory = 'all';
     const UNCATEGORIZED_KEY = '__uncategorized__';
+    const VIEW_STORAGE_KEY = 'library_view';
+
+    function normalizeView(view) {
+        return view === 'list' ? 'list' : 'grid';
+    }
+
+    function applyViewUI() {
+        document.documentElement.classList.toggle('library-view-list', currentView === 'list');
+        document.documentElement.classList.toggle('library-view-grid', currentView === 'grid');
+
+        if (viewGridBtn && viewListBtn) {
+            viewGridBtn.classList.toggle('active', currentView === 'grid');
+            viewListBtn.classList.toggle('active', currentView === 'list');
+        }
+
+        if (!bookList) return;
+        bookList.classList.toggle('library-grid', currentView === 'grid');
+        bookList.classList.toggle('library-list', currentView === 'list');
+    }
+
+    function setView(view, { persist = true, rerender = true } = {}) {
+        const next = normalizeView(view);
+        if (next === currentView) return;
+        currentView = next;
+        applyViewUI();
+
+        if (persist) {
+            try {
+                localStorage.setItem(VIEW_STORAGE_KEY, currentView);
+            } catch {}
+        }
+
+        if (rerender) updateDisplay();
+    }
+
+    // Restore view mode preference early (avoid rendering "no books" before loadBooks()).
+    try {
+        const storedView = localStorage.getItem(VIEW_STORAGE_KEY);
+        currentView = normalizeView(storedView);
+    } catch {}
+    applyViewUI();
 
     // Fetch and Render Books
     async function loadBooks() {
@@ -123,14 +164,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return valA.localeCompare(valB);
         });
 
-        // Toggle View Classes
-        if (currentView === 'list') {
-            bookList.classList.remove('library-grid');
-            bookList.classList.add('library-list');
-        } else {
-            bookList.classList.remove('library-list');
-            bookList.classList.add('library-grid');
-        }
+        applyViewUI();
 
         renderBooks(sortedBooks);
     }
@@ -145,17 +179,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (viewGridBtn && viewListBtn) {
         viewGridBtn.addEventListener('click', () => {
-            currentView = 'grid';
-            viewGridBtn.classList.add('active');
-            viewListBtn.classList.remove('active');
-            updateDisplay();
+            setView('grid');
         });
 
         viewListBtn.addEventListener('click', () => {
-            currentView = 'list';
-            viewListBtn.classList.add('active');
-            viewGridBtn.classList.remove('active');
-            updateDisplay();
+            setView('list');
         });
     }
 

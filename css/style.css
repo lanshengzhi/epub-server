@@ -263,6 +263,59 @@ a { text-decoration: none; color: inherit; }
     box-shadow: var(--shadow);
 }
 
+/* View Preference (avoid flicker on back/refresh) */
+.library-view-list #view-grid.icon-btn.active {
+    background-color: transparent;
+    color: inherit;
+    box-shadow: none;
+}
+
+.library-view-list #view-list.icon-btn {
+    background-color: var(--primary-color);
+    color: white;
+    box-shadow: var(--shadow);
+}
+
+.library-view-list #book-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.library-view-list #book-list .book-card {
+    flex-direction: row;
+    height: 100px;
+    align-items: center;
+}
+
+.library-view-list #book-list .book-cover {
+    height: 100%;
+    width: 80px;
+    flex-shrink: 0;
+}
+
+.library-view-list #book-list .book-info {
+    justify-content: center;
+    padding: 0 20px;
+}
+
+.library-view-list #book-list .book-info h3 {
+    font-size: 1.1rem;
+    margin-bottom: 4px;
+}
+
+.library-view-list #book-list .delete-btn {
+    top: 50%;
+    transform: translateY(-50%);
+    right: 15px;
+}
+
+.library-view-list #book-list .edit-tags-btn {
+    top: 50%;
+    transform: translateY(-50%);
+    right: 60px;
+}
+
 /* List View */
 .library-list {
     display: flex;

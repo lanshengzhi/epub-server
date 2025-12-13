@@ -507,6 +507,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function applySettings() {
+        // Prevent "Wider Text" from becoming too wide on touch devices.
+        const isTouchDevice = typeof window.matchMedia === 'function' && window.matchMedia('(pointer: coarse)').matches;
+        const maxWidthCap = isTouchDevice ? 900 : Number.POSITIVE_INFINITY;
+        if (currentMaxWidth > maxWidthCap) {
+            currentMaxWidth = maxWidthCap;
+            localStorage.setItem('maxWidth', currentMaxWidth);
+        }
+
         contentViewer.style.fontSize = `${currentFontSize}%`;
         contentViewer.style.maxWidth = `${currentMaxWidth}px`;
         document.body.classList.toggle('dark-mode', currentTheme === 'dark');
@@ -581,7 +589,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const MIN_MAX_WIDTH = 420;
     const MAX_MAX_WIDTH = 1400;
+    const TOUCH_MAX_MAX_WIDTH = 900;
     const WIDTH_STEP = 80;
+    function getMaxWidthCap() {
+        const isTouchDevice = typeof window.matchMedia === 'function' && window.matchMedia('(pointer: coarse)').matches;
+        return isTouchDevice ? TOUCH_MAX_MAX_WIDTH : MAX_MAX_WIDTH;
+    }
 
     const marginIncreaseBtn = document.getElementById('margin-increase');
     if (marginIncreaseBtn) {
@@ -596,7 +609,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const marginDecreaseBtn = document.getElementById('margin-decrease');
     if (marginDecreaseBtn) {
         marginDecreaseBtn.onclick = () => {
-            currentMaxWidth = Math.min(MAX_MAX_WIDTH, currentMaxWidth + WIDTH_STEP);
+            currentMaxWidth = Math.min(getMaxWidthCap(), currentMaxWidth + WIDTH_STEP);
             localStorage.setItem('maxWidth', currentMaxWidth);
             showToast(t('reader.width_toast', { px: currentMaxWidth }));
             applySettings();
@@ -622,7 +635,28 @@ document.addEventListener('DOMContentLoaded', async () => {
     let touchStartX = null;
     let touchStartY = null;
 
+    function hasActiveTextSelectionInContent() {
+        const sel = typeof window.getSelection === 'function' ? window.getSelection() : null;
+        if (!sel || sel.rangeCount === 0 || sel.isCollapsed) return false;
+
+        const anchorNode = sel.anchorNode;
+        const focusNode = sel.focusNode;
+        if (!anchorNode && !focusNode) return false;
+
+        return (
+            (anchorNode && contentViewer.contains(anchorNode)) ||
+            (focusNode && contentViewer.contains(focusNode))
+        );
+    }
+
     scrollWrapper.addEventListener('touchstart', (e) => {
+        // Ignore multi-touch (pinch/zoom) and avoid tracking swipe gesture.
+        if (e.touches && e.touches.length > 1) {
+            touchStartX = null;
+            touchStartY = null;
+            return;
+        }
+
         // Avoid interfering with code block scrolling
         if (e.target.closest('pre')) {
             touchStartX = null;
@@ -634,6 +668,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     scrollWrapper.addEventListener('touchend', (e) => {
         if (touchStartX === null) return;
+
+        // If the user is selecting text (highlight), do not treat this as a page swipe.
+        if (hasActiveTextSelectionInContent()) {
+            touchStartX = null;
+            touchStartY = null;
+            return;
+        }
 
         const touchEndX = e.changedTouches[0].screenX;
         const touchEndY = e.changedTouches[0].screenY;
