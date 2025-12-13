@@ -18,6 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Controls
     const sortSelect = document.getElementById('sort-select');
+    const recentFirstToggle = document.getElementById('recent-first-toggle');
     const viewGridBtn = document.getElementById('view-grid');
     const viewListBtn = document.getElementById('view-list');
     const categoryList = document.getElementById('category-list');
@@ -28,6 +29,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentCategory = 'all';
     const UNCATEGORIZED_KEY = '__uncategorized__';
     const VIEW_STORAGE_KEY = 'library_view';
+    const RECENT_FIRST_STORAGE_KEY = 'library_recent_first';
+    let recentFirst = true;
     let activeUploadTaskId = null;
     let uploadPollTimer = null;
     let uploadLogIndex = 0;
@@ -120,6 +123,85 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch {}
     applyViewUI();
 
+    function normalizeBooleanPref(value, fallback) {
+        if (value === null || value === undefined) return fallback;
+        const normalized = String(value).trim().toLowerCase();
+        if (!normalized) return fallback;
+        if (normalized === '1' || normalized === 'true' || normalized === 'yes' || normalized === 'on') return true;
+        if (normalized === '0' || normalized === 'false' || normalized === 'no' || normalized === 'off') return false;
+        return fallback;
+    }
+
+    try {
+        recentFirst = normalizeBooleanPref(localStorage.getItem(RECENT_FIRST_STORAGE_KEY), true);
+    } catch {}
+    if (recentFirstToggle) recentFirstToggle.checked = recentFirst;
+
+    function readBookProgress(bookDir) {
+        if (!bookDir) return null;
+        const key = `progress_${bookDir}`;
+        let raw = null;
+        try {
+            raw = localStorage.getItem(key);
+        } catch {
+            return null;
+        }
+        if (!raw) return null;
+        const trimmed = String(raw).trim();
+        if (!trimmed.startsWith('{')) {
+            return {
+                href: trimmed,
+                anchor: null,
+                percent: null,
+                updatedAt: null,
+                chapterTitle: null,
+                spineIndex: null
+            };
+        }
+        try {
+            const parsed = JSON.parse(trimmed);
+            if (!parsed || typeof parsed !== 'object') return null;
+
+            let updatedAt = null;
+            if (typeof parsed.updatedAt === 'number' && Number.isFinite(parsed.updatedAt)) {
+                updatedAt = parsed.updatedAt < 1e12 ? parsed.updatedAt * 1000 : parsed.updatedAt;
+            }
+
+            return {
+                href: typeof parsed.href === 'string' ? parsed.href : null,
+                anchor: typeof parsed.anchor === 'string' && parsed.anchor ? parsed.anchor : null,
+                percent: typeof parsed.percent === 'number' && Number.isFinite(parsed.percent) ? parsed.percent : null,
+                updatedAt,
+                chapterTitle: typeof parsed.chapterTitle === 'string' && parsed.chapterTitle.trim() ? parsed.chapterTitle.trim() : null,
+                spineIndex: typeof parsed.spineIndex === 'number' && Number.isFinite(parsed.spineIndex) ? parsed.spineIndex : null
+            };
+        } catch {
+            return null;
+        }
+    }
+
+    function formatBookProgress(progress) {
+        if (!progress) return '';
+        const hasPercent = typeof progress.percent === 'number' && Number.isFinite(progress.percent);
+        const percentInt = hasPercent ? Math.max(0, Math.min(100, Math.round(progress.percent * 100))) : null;
+        const chapterTitle =
+            progress.chapterTitle ||
+            (typeof progress.spineIndex === 'number' && Number.isFinite(progress.spineIndex)
+                ? t('library.reading_progress_chapter_index', { index: progress.spineIndex + 1 })
+                : null);
+
+        if (percentInt !== null && chapterTitle) {
+            return t('library.reading_progress_percent_chapter', { percent: percentInt, chapter: chapterTitle });
+        }
+        if (percentInt !== null) {
+            return t('library.reading_progress_percent', { percent: percentInt });
+        }
+        if (chapterTitle) {
+            return t('library.reading_progress_chapter', { chapter: chapterTitle });
+        }
+        return '';
+    }
+
     // Fetch and Render Books
     async function loadBooks() {
         if (window.location.protocol === 'file:') {
@@ -199,6 +281,23 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function updateDisplay() {
+        const progressCache = new Map();
+        const getProgress = (bookDir) => {
+            if (!bookDir) return null;
+            if (progressCache.has(bookDir)) return progressCache.get(bookDir);
+            const progress = readBookProgress(bookDir);
+            progressCache.set(bookDir, progress);
+            return progress;
+        };
+        const hasReadingRecord = (progress) => {
+            if (!progress) return false;
+            if (typeof progress.updatedAt === 'number' && Number.isFinite(progress.updatedAt)) return true;
+            if (typeof progress.percent === 'number' && Number.isFinite(progress.percent)) return true;
+            if (typeof progress.chapterTitle === 'string' && progress.chapterTitle.trim()) return true;
+            if (typeof progress.spineIndex === 'number' && Number.isFinite(progress.spineIndex)) return true;
+            return typeof progress.href === 'string' && progress.href.trim().length > 0;
+        };
+
         // Filter
         let filteredBooks = booksData;
         if (currentCategory !== 'all') {
@@ -211,20 +310,47 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Sort
         const sortedBooks = [...filteredBooks].sort((a, b) => {
+            if (recentFirst) {
+                const pa = getProgress(a.dir);
+                const pb = getProgress(b.dir);
+                const ta = pa && typeof pa.updatedAt === 'number' && Number.isFinite(pa.updatedAt) ? pa.updatedAt : null;
+                const tb = pb && typeof pb.updatedAt === 'number' && Number.isFinite(pb.updatedAt) ? pb.updatedAt : null;
+                const ha = hasReadingRecord(pa);
+                const hb = hasReadingRecord(pb);
+                const hta = ta !== null;
+                const htb = tb !== null;
+
+                if (hta && htb && ta !== tb) return tb - ta;
+                if (hta !== htb) return hta ? -1 : 1;
+                if (ha !== hb) return ha ? -1 : 1;
+            }
+
             const valA = (a[currentSort] || '').toString().toLowerCase();
             const valB = (b[currentSort] || '').toString().toLowerCase();
-            return valA.localeCompare(valB);
+            const cmp = valA.localeCompare(valB);
+            if (cmp !== 0) return cmp;
+            return (a.dir || '').toString().localeCompare((b.dir || '').toString());
         });
 
         applyViewUI();
 
-        renderBooks(sortedBooks);
+        renderBooks(sortedBooks, getProgress);
     }
 
     // Event Listeners for Controls
     if (sortSelect) {
         sortSelect.addEventListener('change', (e) => {
             currentSort = e.target.value;
+            updateDisplay();
+        });
+    }
+
+    if (recentFirstToggle) {
+        recentFirstToggle.addEventListener('change', () => {
+            recentFirst = !!recentFirstToggle.checked;
+            try {
+                localStorage.setItem(RECENT_FIRST_STORAGE_KEY, recentFirst ? '1' : '0');
+            } catch {}
             updateDisplay();
         });
     }
@@ -239,7 +365,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    function renderBooks(books) {
+    function renderBooks(books, getProgress) {
         bookList.innerHTML = '';
         if (books.length === 0) {
             bookList.innerHTML = `<p>${t('library.no_books_found')}</p>`;
@@ -247,6 +373,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         books.forEach(book => {
+            const progress = typeof getProgress === 'function' ? getProgress(book.dir) : readBookProgress(book.dir);
+            const progressText = formatBookProgress(progress);
             const card = document.createElement('a');
             card.className = 'book-card';
             card.href = `viewer.html?book=${encodeURIComponent(book.dir)}`;
@@ -263,6 +391,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="book-info">
                     <h3>${book.title}</h3>
                     <p>${book.author}</p>
+                    ${progressText ? `<p class="book-progress">${progressText}</p>` : ''}
                 </div>
                 <button class="edit-tags-btn" data-book-dir="${book.dir}" title="${t('library.edit_categories')}">
                     <i class="fas fa-tags"></i>

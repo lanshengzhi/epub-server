@@ -33,7 +33,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 	    const BOOK_KEY = `progress_${bookDir}`;
 	    const THEME_KEY = 'theme';
 	    const TOAST_DURATION_MS = 2000;
-	    const PROGRESS_VERSION = 2;
+	    const PROGRESS_VERSION = 3;
 	    const READING_BLOCK_SELECTOR = 'p, li, blockquote, h1, h2, h3, h4, h5, h6, dt, dd';
 	    const AUTO_ANCHOR_PREFIX = '__epub_auto_';
 
@@ -86,7 +86,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 	                v: 1,
 	                href: filePath,
 	                anchor: anchor || null,
-	                percent: null
+	                percent: null,
+	                updatedAt: null,
+	                chapterTitle: null,
+	                spineIndex: null
 	            };
 	        }
 	
@@ -95,11 +98,20 @@ document.addEventListener('DOMContentLoaded', async () => {
 	            if (!parsed || typeof parsed !== 'object') return null;
 	            if (!parsed.href || typeof parsed.href !== 'string') return null;
 	
+	            let updatedAt = null;
+	            if (typeof parsed.updatedAt === 'number' && Number.isFinite(parsed.updatedAt)) {
+	                // If a timestamp is in seconds, convert to ms.
+	                updatedAt = parsed.updatedAt < 1e12 ? parsed.updatedAt * 1000 : parsed.updatedAt;
+	            }
+
 	            return {
 	                v: typeof parsed.v === 'number' ? parsed.v : PROGRESS_VERSION,
 	                href: normalizeBookPath(parsed.href).split('#')[0],
 	                anchor: typeof parsed.anchor === 'string' && parsed.anchor ? parsed.anchor : null,
-	                percent: typeof parsed.percent === 'number' && Number.isFinite(parsed.percent) ? parsed.percent : null
+	                percent: typeof parsed.percent === 'number' && Number.isFinite(parsed.percent) ? parsed.percent : null,
+	                updatedAt,
+	                chapterTitle: typeof parsed.chapterTitle === 'string' && parsed.chapterTitle.trim() ? parsed.chapterTitle.trim() : null,
+	                spineIndex: typeof parsed.spineIndex === 'number' && Number.isFinite(parsed.spineIndex) ? parsed.spineIndex : null
 	            };
 	        } catch {
 	            return null;
@@ -116,11 +128,17 @@ document.addEventListener('DOMContentLoaded', async () => {
 	            href: nextHref,
 	            anchor: null,
 	            percent: null
+	            ,
+	            updatedAt: existing ? existing.updatedAt : null,
+	            chapterTitle: null,
+	            spineIndex: null
 	        };
 	
 	        if (existing && existing.href === nextHref) {
 	            next.anchor = existing.anchor;
 	            next.percent = existing.percent;
+	            next.chapterTitle = existing.chapterTitle;
+	            next.spineIndex = existing.spineIndex;
 	        } else {
 	            next.percent = 0;
 	        }
@@ -129,6 +147,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 	        if (typeof patch.percent === 'number' && Number.isFinite(patch.percent)) {
 	            next.percent = Math.max(0, Math.min(1, patch.percent));
 	        }
+	        if (typeof patch.updatedAt === 'number' && Number.isFinite(patch.updatedAt)) {
+	            next.updatedAt = patch.updatedAt < 1e12 ? patch.updatedAt * 1000 : patch.updatedAt;
+	        }
+	        if (typeof patch.chapterTitle === 'string') next.chapterTitle = patch.chapterTitle.trim() || null;
+	        if (typeof patch.spineIndex === 'number' && Number.isFinite(patch.spineIndex)) next.spineIndex = patch.spineIndex;
 	
 	        try {
 	            localStorage.setItem(BOOK_KEY, JSON.stringify(next));
@@ -202,22 +225,23 @@ document.addEventListener('DOMContentLoaded', async () => {
 	        return Math.max(0, Math.min(1, scrollWrapper.scrollTop / max));
 	    }
 	
-	    function saveReadingProgress() {
+	    function saveReadingProgress({ updateLastReadAt = true } = {}) {
 	        if (!currentChapterHref) return;
 	        const patch = { href: currentChapterHref, percent: getScrollPercent() };
+	        if (updateLastReadAt) patch.updatedAt = Date.now();
 	        const anchorId = getReadingAnchorId();
 	        if (anchorId) patch.anchor = anchorId;
 	        writeProgress(patch);
 	    }
 	
-	    function scheduleProgressSave(immediate = false) {
+	    function scheduleProgressSave(immediate = false, { updateLastReadAt = true } = {}) {
 	        if (isRestoringScrollPosition) return;
 	        if (progressSaveTimer) window.clearTimeout(progressSaveTimer);
 	        if (immediate) {
-	            saveReadingProgress();
+	            saveReadingProgress({ updateLastReadAt });
 	            return;
 	        }
-	        progressSaveTimer = window.setTimeout(saveReadingProgress, 250);
+	        progressSaveTimer = window.setTimeout(() => saveReadingProgress({ updateLastReadAt }), 250);
 	    }
 
 	    function updateFontChangeTitle() {
@@ -423,6 +447,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             activeLink.scrollIntoView({ block: 'center', behavior: 'smooth' });
         }
 
+	        const shouldUpdateLastReadAt = !(options && options.restore);
+	        writeProgress({
+	            href: normalizedFilePath,
+	            chapterTitle: activeLink ? activeLink.textContent : null,
+	            spineIndex: currentSpineIndex,
+	            updatedAt: shouldUpdateLastReadAt ? Date.now() : undefined
+	        });
+
         try {
             if (transitionCleanupTimer) window.clearTimeout(transitionCleanupTimer);
             contentViewer.classList.remove('slide-out-left', 'slide-out-right', 'slide-in-left', 'slide-in-right');
@@ -523,7 +555,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 	                    requestAnimationFrame(() => {
 	                        requestAnimationFrame(() => {
 	                            isRestoringScrollPosition = false;
-	                            scheduleProgressSave(true);
+	                            scheduleProgressSave(true, { updateLastReadAt: false });
 	                        });
 	                    });
 	                }
@@ -901,11 +933,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 	    }, { passive: true });
 	
 	    // Persist reading position within long chapters
-	    scrollWrapper.addEventListener('scroll', () => scheduleProgressSave(false), { passive: true });
+	    scrollWrapper.addEventListener('scroll', () => scheduleProgressSave(false, { updateLastReadAt: true }), { passive: true });
 	    document.addEventListener('visibilitychange', () => {
-	        if (document.visibilityState === 'hidden') scheduleProgressSave(true);
+	        if (document.visibilityState === 'hidden') scheduleProgressSave(true, { updateLastReadAt: true });
 	    });
-	    window.addEventListener('beforeunload', () => scheduleProgressSave(true));
+	    window.addEventListener('beforeunload', () => scheduleProgressSave(true, { updateLastReadAt: true }));
 
     function handleSwipe(startX, startY, endX, endY) {
         const diffX = endX - startX;
