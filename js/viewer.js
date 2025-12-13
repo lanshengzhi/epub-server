@@ -569,6 +569,34 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (currentSpineIndex < spineItems.length - 1) loadChapter(spineItems[currentSpineIndex + 1].href, 'next');
     };
 
+    // Keyboard Navigation (Desktop)
+    document.addEventListener('keydown', (e) => {
+        if (e.defaultPrevented) return;
+        if (e.isComposing) return;
+        if (e.altKey || e.ctrlKey || e.metaKey) return;
+
+        const target = e.target;
+        const tag = target && target.tagName ? target.tagName.toLowerCase() : '';
+        const isEditable =
+            tag === 'input' ||
+            tag === 'textarea' ||
+            tag === 'select' ||
+            (target && target.isContentEditable);
+        if (isEditable) return;
+
+        if (e.key === 'ArrowLeft') {
+            if (!prevBtn.disabled) {
+                e.preventDefault();
+                prevBtn.click();
+            }
+        } else if (e.key === 'ArrowRight') {
+            if (!nextBtn.disabled) {
+                e.preventDefault();
+                nextBtn.click();
+            }
+        }
+    });
+
     document.getElementById('theme-toggle').onclick = () => {
         currentTheme = currentTheme === 'light' ? 'dark' : 'light';
         localStorage.setItem(THEME_KEY, currentTheme);

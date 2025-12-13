@@ -5,6 +5,7 @@ import re
 import uuid
 import glob
 import json
+from urllib.parse import unquote
 from flask import Flask, request, jsonify, send_from_directory
 from bs4 import BeautifulSoup
 
@@ -133,19 +134,21 @@ def get_book_metadata(book_dir_name):
     opf_path = opf_files[0]
     
     try:
+        book_root_real = os.path.realpath(book_dir)
+
         with open(opf_path, 'r', encoding='utf-8') as f:
             # parsing as 'xml' might fail with some encodings or malformed headers
             # 'html.parser' is more lenient
             content = f.read()
-            soup = BeautifulSoup(content, 'xml') 
-        
+            soup = BeautifulSoup(content, 'xml')
+
         # Try finding tags with or without namespace prefixes
         title_tag = soup.find('title') or soup.find('dc:title')
         title = title_tag.get_text() if title_tag else book_dir_name
-        
+
         creator_tag = soup.find('creator') or soup.find('dc:creator')
         author = creator_tag.get_text() if creator_tag else "Unknown"
-        
+
         # Extract Subjects (Categories)
         subjects = []
         # Find all tags that might be subjects
@@ -153,45 +156,123 @@ def get_book_metadata(book_dir_name):
             text = tag.get_text().strip()
             if text:
                 subjects.append(text)
-        
-        # Cover finding: Prioritize EPUB standards
+
+        # Cover finding: prioritize EPUB standards and handle common EPUB2 quirks.
+        image_exts = ('.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg', '.avif')
+
+        def strip_fragment_and_query(value):
+            value = value.split('#', 1)[0]
+            value = value.split('?', 1)[0]
+            return value
+
+        def looks_like_path(value):
+            value = (value or '').strip()
+            return (
+                '/' in value
+                or '\\' in value
+                or any(value.lower().endswith(ext) for ext in image_exts)
+            )
+
+        def resolve_href_to_relpath(href, base_dir):
+            if not href:
+                return None
+            href = unquote(strip_fragment_and_query(href)).strip()
+            if not href:
+                return None
+            href = href.replace('\\', '/')
+            full_path = os.path.normpath(os.path.join(base_dir, href))
+            full_real = os.path.realpath(full_path)
+            if not (full_real == book_root_real or full_real.startswith(book_root_real + os.sep)):
+                return None
+            if os.path.isfile(full_path):
+                return os.path.relpath(full_path, LIBRARY_FOLDER)
+            return None
+
+        def extract_cover_from_xhtml(xhtml_full_path):
+            xhtml_real = os.path.realpath(xhtml_full_path)
+            if not (xhtml_real == book_root_real or xhtml_real.startswith(book_root_real + os.sep)):
+                return None
+            try:
+                with open(xhtml_full_path, 'r', encoding='utf-8', errors='ignore') as xf:
+                    xhtml = xf.read()
+            except Exception:
+                return None
+
+            try:
+                doc = BeautifulSoup(xhtml, 'html.parser')
+            except Exception:
+                return None
+
+            xhtml_dir = os.path.dirname(xhtml_full_path)
+
+            img = doc.find('img')
+            if img and img.get('src'):
+                return resolve_href_to_relpath(img.get('src'), xhtml_dir)
+
+            svg_image = doc.find('image')
+            if svg_image:
+                href = (
+                    svg_image.get('href')
+                    or svg_image.get('xlink:href')
+                    or svg_image.get('{http://www.w3.org/1999/xlink}href')
+                )
+                if href:
+                    return resolve_href_to_relpath(href, xhtml_dir)
+
+            return None
+
         cover_path = None
         cover_item = None
         manifest = soup.find('manifest')
+        opf_dir = os.path.dirname(opf_path)
 
         if manifest:
-            # 1. EPUB 3: properties="cover-image"
+            # 1) EPUB 3: properties="cover-image"
             cover_item = manifest.find('item', attrs={'properties': lambda x: x and 'cover-image' in x})
-            
-            # 2. EPUB 2: <meta name="cover" content="item-id" />
-            if not cover_item:
+
+            # 2) EPUB 2: <meta name="cover" content="item-id" /> (sometimes incorrectly a path)
+            if not cover_item and not cover_path:
                 meta_cover = soup.find('meta', attrs={'name': 'cover'})
                 if meta_cover:
-                    cover_id = meta_cover.get('content')
-                    if cover_id:
-                        cover_item = manifest.find('item', id=cover_id)
+                    cover_ref = (meta_cover.get('content') or '').strip()
+                    if cover_ref:
+                        cover_item = manifest.find('item', id=cover_ref) or manifest.find('item', attrs={'href': cover_ref})
+                        if not cover_item and looks_like_path(cover_ref):
+                            cover_path = resolve_href_to_relpath(cover_ref, opf_dir)
 
-            # 3. Fallback: Exact id="cover" (Common convention)
+            # 3) Common conventions
             if not cover_item:
-                cover_item = manifest.find('item', id="cover")
+                cover_item = (
+                    manifest.find('item', id='cover-image')
+                    or manifest.find('item', id='cover')
+                )
 
-            if cover_item:
-                href = cover_item.get('href')
+            # 4) If the selected item isn't an image, try extracting from its XHTML wrapper.
+            if not cover_path and cover_item:
+                href = cover_item.get('href') or ''
+                media_type = (cover_item.get('media-type') or '').strip().lower()
                 if href:
-                    # Resolve path relative to OPF
-                    opf_dir = os.path.dirname(opf_path)
-                    full_cover_path = os.path.join(opf_dir, href)
-                    # Make relative to root for the frontend
-                    # Note: Since we are moving books to 'library/', the relative path from root
-                    # should actually be relative to the book dir if we serve it under /book_dir/
-                    # but if we serve via generic path, we want the path that the browser can fetch.
-                    # Since serve_static handles lookup in library folder, 
-                    # we can return "BookDir/PathToCover"
-                    
-                    # relpath from LIBRARY_FOLDER
-                    rel_to_lib = os.path.relpath(full_cover_path, LIBRARY_FOLDER)
-                    cover_path = rel_to_lib # e.g. "progit/cover.jpg"
-    
+                    rel_candidate = resolve_href_to_relpath(href, opf_dir)
+                    is_image = media_type.startswith('image/') or any(href.lower().endswith(ext) for ext in image_exts)
+                    if is_image:
+                        cover_path = rel_candidate
+                    else:
+                        full_xhtml_path = os.path.normpath(os.path.join(opf_dir, unquote(strip_fragment_and_query(href))))
+                        cover_path = extract_cover_from_xhtml(full_xhtml_path) or rel_candidate
+
+            # 5) Final fallback: first image item whose id/href suggests it's a cover.
+            if not cover_path:
+                for item in manifest.find_all('item'):
+                    href = (item.get('href') or '').strip()
+                    media_type = (item.get('media-type') or '').strip().lower()
+                    item_id = (item.get('id') or '').lower()
+                    if not href or not media_type.startswith('image/'):
+                        continue
+                    if 'cover' in item_id or 'cover' in href.lower():
+                        cover_path = resolve_href_to_relpath(href, opf_dir)
+                        if cover_path:
+                            break
+
         return {
             "title": title,
             "author": author,
