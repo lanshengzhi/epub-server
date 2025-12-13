@@ -23,6 +23,9 @@ A modern, web-based EPUB reader for unpacked ebooks.
     # Activate virtual environment (if not already active)
     source .venv/bin/activate
 
+    # Install dependencies (first run)
+    pip install -r requirements.txt
+
     # Run the server
     python3 server.py
     ```

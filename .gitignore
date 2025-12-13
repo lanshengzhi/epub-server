@@ -8,3 +8,4 @@ server.log
 temp_uploads/
 .DS_Store
 *.swp
+library/
