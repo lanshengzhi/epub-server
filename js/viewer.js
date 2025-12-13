@@ -97,6 +97,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     let currentTheme = localStorage.getItem('theme') || 'light';
     let currentMaxWidth = parseInt(localStorage.getItem('maxWidth')) || 800;
     let currentFontProfile = localStorage.getItem('fontProfile') || 'serif';
+    let loadChapterRequestId = 0;
+    let transitionCleanupTimer = null;
 
     function updateFontChangeTitle() {
         const fontChangeBtn = document.getElementById('font-change');
@@ -276,8 +278,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    async function loadChapter(href) {
+    async function loadChapter(href, direction = null) {
         if (!href) return;
+        const requestId = ++loadChapterRequestId;
         const [filePath, anchor] = href.split('#');
         const normalizedFilePath = normalizeBookPath(filePath);
         const normalizedHref = anchor ? `${normalizedFilePath}#${anchor}` : normalizedFilePath;
@@ -297,41 +300,112 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         try {
-            contentViewer.style.opacity = '0.5'; 
-            const response = await fetchAsset(normalizedFilePath);
+            if (transitionCleanupTimer) window.clearTimeout(transitionCleanupTimer);
+            contentViewer.classList.remove('slide-out-left', 'slide-out-right', 'slide-in-left', 'slide-in-right');
+            contentViewer.style.opacity = '1';
+
+            // Animation: Exit Phase
+            if (direction) {
+                const exitClass = direction === 'next' ? 'slide-out-left' : 'slide-out-right';
+                contentViewer.classList.add(exitClass);
+            } else {
+                contentViewer.style.opacity = '0.5'; // Fallback for jumps
+            }
+
+            const fetchPromise = fetchAsset(normalizedFilePath);
+            // Wait for at least the animation duration if direction is set
+            const animationPromise = direction ? new Promise(r => setTimeout(r, 200)) : Promise.resolve();
+
+            const [response] = await Promise.all([fetchPromise, animationPromise]);
+            if (requestId !== loadChapterRequestId) return;
+
             if (!response.ok) throw new Error(`Status: ${response.status}`);
             
             const htmlText = await response.text();
+            if (requestId !== loadChapterRequestId) return;
             const parser = new DOMParser();
             const doc = parser.parseFromString(htmlText, 'text/html');
             
             await resolveAssetPaths(doc, normalizedFilePath);
+            if (requestId !== loadChapterRequestId) return;
             
             const docLang = doc.documentElement.getAttribute('lang') || bookMetadataLang;
             if (docLang) contentViewer.setAttribute('lang', docLang);
 
+            // Swap Content
             contentViewer.innerHTML = doc.body.innerHTML;
+            
+            // Animation: Cleanup Exit & Start Enter Phase
+            if (direction) {
+                contentViewer.classList.remove('slide-out-left', 'slide-out-right');
+                
+                const enterClass = direction === 'next' ? 'slide-in-right' : 'slide-in-left';
+                contentViewer.classList.add(enterClass);
+                
+                // Remove enter class after animation finishes
+                transitionCleanupTimer = window.setTimeout(() => {
+                    if (requestId !== loadChapterRequestId) return;
+                    contentViewer.classList.remove(enterClass);
+                }, 200);
+            } else {
+                 contentViewer.style.opacity = '1';
+            }
             
             setupInteractions(contentViewer, normalizedFilePath);
             optimizeContentImages(contentViewer);
             enhanceCodeBlocks(contentViewer);
             applySettings();
 
+            const withInstantScroll = (fn) => {
+                const prev = scrollWrapper.style.getPropertyValue('scroll-behavior');
+                const prevPriority = scrollWrapper.style.getPropertyPriority('scroll-behavior');
+                scrollWrapper.style.setProperty('scroll-behavior', 'auto', 'important');
+                try {
+                    fn();
+                } finally {
+                    // Ensure the scroll action has applied before restoring smooth behavior.
+                    requestAnimationFrame(() => {
+                        requestAnimationFrame(() => {
+                            if (prev) scrollWrapper.style.setProperty('scroll-behavior', prev, prevPriority || '');
+                            else scrollWrapper.style.removeProperty('scroll-behavior');
+                        });
+                    });
+                }
+            };
+
+            const jumpToChapterStart = () => {
+                withInstantScroll(() => {
+                    if (typeof scrollWrapper.scrollTo === 'function') scrollWrapper.scrollTo(0, 0);
+                    else scrollWrapper.scrollTop = 0;
+                });
+            };
+
             if (anchor) {
                 setTimeout(() => {
                     const targetEl = document.getElementById(anchor);
-                    if (targetEl) targetEl.scrollIntoView();
-                    else scrollWrapper.scrollTop = 0;
+                    if (targetEl) {
+                        withInstantScroll(() => {
+                            try {
+                                targetEl.scrollIntoView({ block: 'start' });
+                            } catch {
+                                targetEl.scrollIntoView();
+                            }
+                        });
+                    } else {
+                        jumpToChapterStart();
+                    }
                 }, 0);
             } else {
-                scrollWrapper.scrollTop = 0;
+                jumpToChapterStart();
             }
         } catch (e) {
+            if (requestId !== loadChapterRequestId) return;
             console.error(e);
             contentViewer.innerHTML = `<div style="padding:20px; color:red">${t('reader.error_generic', { message: e.message })}</div>`;
-        } finally {
+            if (direction) contentViewer.classList.remove('slide-out-left', 'slide-out-right');
             contentViewer.style.opacity = '1';
-            updateButtons();
+        } finally {
+            if (requestId === loadChapterRequestId) updateButtons();
         }
     }
 
@@ -462,12 +536,29 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('sidebar').classList.remove('open');
     };
 
+    // Mobile Settings Toggle
+    const settingsToggle = document.getElementById('mobile-settings-toggle');
+    const settingsGroup = document.getElementById('reader-settings');
+    if (settingsToggle && settingsGroup) {
+        settingsToggle.onclick = (e) => {
+            e.stopPropagation();
+            settingsGroup.classList.toggle('show');
+        };
+        document.addEventListener('click', (e) => {
+            if (settingsGroup.classList.contains('show') && 
+                !settingsGroup.contains(e.target) && 
+                !settingsToggle.contains(e.target)) {
+                settingsGroup.classList.remove('show');
+            }
+        });
+    }
+
     prevBtn.onclick = () => {
-        if (currentSpineIndex > 0) loadChapter(spineItems[currentSpineIndex - 1].href);
+        if (currentSpineIndex > 0) loadChapter(spineItems[currentSpineIndex - 1].href, 'prev');
     };
 
     nextBtn.onclick = () => {
-        if (currentSpineIndex < spineItems.length - 1) loadChapter(spineItems[currentSpineIndex + 1].href);
+        if (currentSpineIndex < spineItems.length - 1) loadChapter(spineItems[currentSpineIndex + 1].href, 'next');
     };
 
     document.getElementById('theme-toggle').onclick = () => {
@@ -525,6 +616,53 @@ document.addEventListener('DOMContentLoaded', async () => {
             applySettings();
         };
         updateFontChangeTitle();
+    }
+
+    // --- Touch / Swipe Support ---
+    let touchStartX = null;
+    let touchStartY = null;
+
+    scrollWrapper.addEventListener('touchstart', (e) => {
+        // Avoid interfering with code block scrolling
+        if (e.target.closest('pre')) {
+            touchStartX = null;
+            return;
+        }
+        touchStartX = e.changedTouches[0].screenX;
+        touchStartY = e.changedTouches[0].screenY;
+    }, { passive: true });
+
+    scrollWrapper.addEventListener('touchend', (e) => {
+        if (touchStartX === null) return;
+
+        const touchEndX = e.changedTouches[0].screenX;
+        const touchEndY = e.changedTouches[0].screenY;
+        
+        handleSwipe(touchStartX, touchStartY, touchEndX, touchEndY);
+        touchStartX = null; 
+    }, { passive: true });
+
+    scrollWrapper.addEventListener('touchcancel', () => {
+        touchStartX = null;
+        touchStartY = null;
+    }, { passive: true });
+
+    function handleSwipe(startX, startY, endX, endY) {
+        const diffX = endX - startX;
+        const diffY = endY - startY;
+        const threshold = 50; 
+
+        if (Math.abs(diffX) > Math.abs(diffY)) { // Horizontal
+            if (Math.abs(diffX) > threshold) {
+                if (diffX > 0) {
+                    // Swipe Right -> Previous
+                    if (!prevBtn.disabled) prevBtn.click();
+                } else {
+                    // Swipe Left -> Next
+                    if (!nextBtn.disabled) nextBtn.click();
+                }
+            }
+        }
     }
 
     // Initial Load

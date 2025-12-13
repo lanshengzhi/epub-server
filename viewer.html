@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title data-i18n="reader.page_title">EPUB Reader</title>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
@@ -18,17 +18,22 @@
             <span id="book-title" class="book-title" data-i18n="reader.loading">Loading...</span>
         </div>
         <div class="header-right">
-            <select id="lang-select" class="lang-select" data-i18n-aria-label="common.language"></select>
-            <!-- Font Settings -->
-            <button id="font-decrease" class="icon-btn" data-i18n-title="reader.decrease_font" title="Decrease Font Size"><i class="fas fa-minus"></i></button>
-            <button id="font-increase" class="icon-btn" data-i18n-title="reader.increase_font" title="Increase Font Size"><i class="fas fa-plus"></i></button>
-            <button id="font-change" class="icon-btn" data-i18n-title="reader.change_font" title="Change Font"><i class="fas fa-font"></i></button>
-            
-            <!-- Margin/Width Settings -->
-            <button id="margin-increase" class="icon-btn" data-i18n-title="reader.narrower_text" title="Narrower Text"><i class="fas fa-compress-alt"></i></button>
-            <button id="margin-decrease" class="icon-btn" data-i18n-title="reader.wider_text" title="Wider Text"><i class="fas fa-expand-alt"></i></button>
+            <button id="mobile-settings-toggle" class="icon-btn mobile-only" aria-label="Settings" title="Settings">
+                <i class="fas fa-cog"></i>
+            </button>
 
-            <button id="theme-toggle" class="icon-btn" data-i18n-title="reader.toggle_theme" title="Toggle Theme"><i class="fas fa-moon"></i></button>
+            <div id="reader-settings" class="settings-group">
+                <!-- Font Settings -->
+                <button id="font-decrease" class="icon-btn" data-i18n-title="reader.decrease_font" title="Decrease Font Size"><i class="fas fa-minus"></i></button>
+                <button id="font-increase" class="icon-btn" data-i18n-title="reader.increase_font" title="Increase Font Size"><i class="fas fa-plus"></i></button>
+                <button id="font-change" class="icon-btn" data-i18n-title="reader.change_font" title="Change Font"><i class="fas fa-font"></i></button>
+                
+                <!-- Margin/Width Settings -->
+                <button id="margin-increase" class="icon-btn" data-i18n-title="reader.narrower_text" title="Narrower Text"><i class="fas fa-compress-alt"></i></button>
+                <button id="margin-decrease" class="icon-btn" data-i18n-title="reader.wider_text" title="Wider Text"><i class="fas fa-expand-alt"></i></button>
+
+                <button id="theme-toggle" class="icon-btn" data-i18n-title="reader.toggle_theme" title="Toggle Theme"><i class="fas fa-moon"></i></button>
+            </div>
         </div>
     </header>
 
@@ -36,7 +41,7 @@
         <aside id="sidebar" class="sidebar">
             <div class="sidebar-header">
                 <h3 data-i18n="reader.toc">Table of Contents</h3>
-                <button id="close-sidebar" class="icon-btn" style="display: none;"><i class="fas fa-times"></i></button>
+                <button id="close-sidebar" class="icon-btn"><i class="fas fa-times"></i></button>
             </div>
             <div id="toc-content" class="toc-content">
                 <!-- TOC injected here -->

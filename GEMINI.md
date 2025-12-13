@@ -6,7 +6,7 @@ This project provides a modern, web-based system for importing, managing, and re
 
 ### 1. Web Interface
 -   **Library (`index.html` + `js/library.js`)**: The entry point. Lists server-managed books and links to the Modern Reader. Also supports importing EPUBs and managing categories.
--   **Modern Reader (`viewer.html` + `js/viewer.js`)**: A single-page application that loads book content (chapters) via `fetch`. It handles TOC parsing, theming (Dark/Sepia), font sizing, and navigation.
+-   **Modern Reader (`viewer.html` + `js/viewer.js`)**: A single-page application that loads book content (chapters) via `fetch`. It handles TOC parsing, theming (Dark/Sepia), font sizing, navigation, and touch gestures (swipe to change chapters).
 
 ### 2. Server
 -   **Flask backend (`server.py`)**: Serves the UI and book assets, and exposes a small JSON API (e.g. `/api/books`) used by the Library UI. It also handles EPUB upload/unzip and basic content processing.

@@ -357,7 +357,8 @@ a { text-decoration: none; color: inherit; }
 
 /* Reader Layout */
 .reader-page {
-    height: 100vh;
+    height: 100vh; /* Fallback */
+    height: 100dvh;
     display: flex;
     flex-direction: column; /* Main page is column: Header + Body */
     overflow: hidden;
@@ -369,7 +370,8 @@ a { text-decoration: none; color: inherit; }
     flex-grow: 1;
     overflow: hidden;
     position: relative;
-    height: calc(100vh - var(--header-height));
+    height: calc(100vh - var(--header-height)); /* Fallback */
+    height: calc(100dvh - var(--header-height));
 }
 
 .sidebar {
@@ -506,17 +508,80 @@ a { text-decoration: none; color: inherit; }
 }
 
 /* Responsive */
+/* Mobile Utilities */
+.mobile-only { display: none; }
+
+/* Reader Header Settings Group (Desktop / Default) */
+.settings-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* Sidebar Close Button Default */
+#close-sidebar { display: none; }
+
+@media (max-width: 768px) {
+    /* Show Actions on Mobile (No Hover) */
+    .book-card .delete-btn,
+    .book-card .edit-tags-btn {
+        opacity: 1 !important;
+    }
+    .book-card .delete-btn {
+        background-color: rgba(255, 0, 0, 0.8);
+    }
+    .book-card .edit-tags-btn {
+        background-color: rgba(0, 0, 0, 0.6);
+    }
+    
+    /* Sidebar Close */
+    #close-sidebar { display: flex; }
+}
+
 @media (max-width: 600px) {
     .header-right { gap: 5px; }
-    .book-title { max-width: 150px; }
+    /* Hide title on very small screens to ensure buttons fit */
+    .book-title { display: none; } 
+    
     .reader-controls {
+        display: none;
+    }
+
+    /* Reader Header Adaptation */
+    .mobile-only { display: flex; }
+    
+    .settings-group {
+        display: none; /* Hidden by default on mobile */
+        position: absolute;
+        top: var(--header-height);
+        right: 0;
+        background-color: var(--header-bg);
+        border-bottom: 1px solid var(--border-color);
+        border-left: 1px solid var(--border-color);
+        padding: 15px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        width: auto;
+        min-width: 200px;
+        gap: 15px;
+        z-index: 90;
+    }
+    
+    .settings-group.show {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+    }
+    
+    .settings-group .icon-btn {
         width: 100%;
-        left: 0;
-        bottom: 0;
-        padding: 10px;
-        justify-content: space-between;
-        background: var(--card-bg);
-        border-top: 1px solid var(--border-color);
+        height: 48px; /* Larger touch target */
+        border-radius: 8px;
+        border: 1px solid var(--border-color);
+    }
+
+    /* No on-screen prev/next on mobile (use swipe) */
+    .iframe-container {
+        padding-bottom: calc(20px + env(safe-area-inset-bottom));
     }
 }
 
@@ -533,7 +598,7 @@ a { text-decoration: none; color: inherit; }
     /* Flexbox for centering content-viewer */
     display: flex;
     justify-content: center; /* Center horizontally */
-    padding: 20px 0; /* Add vertical padding for top/bottom if content is short */
+    padding: 20px 0 80px 0; /* Add vertical padding for top/bottom if content is short */
 }
 
 #content-viewer {
@@ -1017,4 +1082,58 @@ ruby {
 
     background-color: var(--border-color);
 
+}
+
+
+/* Page Transition Animations */
+@keyframes slideOutLeft {
+    from { transform: translateX(0); opacity: 1; }
+    to { transform: translateX(-20px); opacity: 0.35; }
+}
+
+@keyframes slideInRight {
+    from { transform: translateX(20px); opacity: 0.35; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes slideOutRight {
+    from { transform: translateX(0); opacity: 1; }
+    to { transform: translateX(20px); opacity: 0.35; }
+}
+
+@keyframes slideInLeft {
+    from { transform: translateX(-20px); opacity: 0.35; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+.slide-out-left,
+.slide-in-right,
+.slide-out-right,
+.slide-in-left {
+    will-change: transform, opacity;
+}
+
+.slide-out-left {
+    animation: slideOutLeft 0.2s ease-out forwards;
+}
+
+.slide-in-right {
+    animation: slideInRight 0.2s ease-out forwards;
+}
+
+.slide-out-right {
+    animation: slideOutRight 0.2s ease-out forwards;
+}
+
+.slide-in-left {
+    animation: slideInLeft 0.2s ease-out forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .slide-out-left,
+    .slide-in-right,
+    .slide-out-right,
+    .slide-in-left {
+        animation: none !important;
+    }
 }
