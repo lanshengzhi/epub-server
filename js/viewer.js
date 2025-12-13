@@ -93,12 +93,54 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Config
     const BOOK_KEY = `progress_${bookDir}`;
     const THEME_KEY = 'theme';
+
+    function normalizeBookPath(path) {
+        if (!path) return path;
+        if (/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(path)) return path;
+
+        const [pathPart, hashPart] = path.split('#');
+        const absolute = pathPart.startsWith('/');
+        const parts = pathPart.split('/');
+        const stack = [];
+
+        for (const part of parts) {
+            if (!part || part === '.') continue;
+            if (part === '..') {
+                if (stack.length > 0) stack.pop();
+                continue;
+            }
+            stack.push(part);
+        }
+
+        const normalized = (absolute ? '/' : '') + stack.join('/');
+        return (normalized.startsWith('/') ? normalized.slice(1) : normalized) + (hashPart ? `#${hashPart}` : '');
+    }
+
+    function resolveBookHref(baseDir, href) {
+        if (!href) return href;
+        if (/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(href)) return href;
+        if (href.startsWith('#')) return null;
+        const [hrefPath, hashPart] = href.split('#');
+        const joined = hrefPath.startsWith('/') ? hrefPath : `${baseDir}/${hrefPath}`;
+        const normalized = normalizeBookPath(joined);
+        return normalized + (hashPart ? `#${hashPart}` : '');
+    }
+
+    tocContent.addEventListener('click', (e) => {
+        const link = e.target.closest('a[data-src]');
+        if (!link || !tocContent.contains(link)) return;
+        const target = link.getAttribute('data-src');
+        if (!target) return;
+        e.preventDefault();
+        loadChapter(target);
+    });
     
     // State
     let spineItems = []; 
     let currentSpineIndex = -1;
     let bookMetadataLang = null;
     let ncxPath = ''; 
+    let tocLoaded = false;
     
     // Settings State
     let currentFontSize = parseInt(localStorage.getItem('fontSize')) || 100;
@@ -109,6 +151,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // --- 1. Load Book Data (Spine & TOC) ---
     async function loadToc() {
         try {
+            tocLoaded = false;
             // Step 1: Find OPF
             const containerRes = await fetchAsset(`${bookDir}/META-INF/container.xml`);
             if (!containerRes.ok) throw new Error('Could not load container.xml');
@@ -147,7 +190,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (item.getAttribute('properties') === 'nav') {
                      const opfDir = opfPath.substring(0, opfPath.lastIndexOf('/'));
                      const navPath = `${opfDir}/${item.getAttribute('href')}`;
-                     await loadNav(navPath);
+                     tocLoaded = await loadNav(navPath);
                 }
             }
 
@@ -156,7 +199,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             spineItems = spineRefs.map(ref => {
                 const id = ref.getAttribute('idref');
                 const href = manifestItems[id];
-                return { id: id, href: `${opfDir}/${href}` };
+                return { id: id, href: normalizeBookPath(`${opfDir}/${href}`) };
             });
             
             if (spineItems.length === 0) {
@@ -164,12 +207,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                 return;
             }
 
-            if (!document.getElementById('toc-content').hasChildNodes() && ncxPath) {
-                loadNcx(ncxPath);
+            if (!tocLoaded && ncxPath) {
+                tocLoaded = await loadNcx(ncxPath);
             }
 
             // Restore Progress
-            const savedProgress = localStorage.getItem(BOOK_KEY);
+            const savedProgressRaw = localStorage.getItem(BOOK_KEY);
+            const savedProgress = savedProgressRaw ? normalizeBookPath(savedProgressRaw) : null;
             if (savedProgress) {
                 const exists = spineItems.some(i => savedProgress.startsWith(i.href));
                 loadChapter(exists ? savedProgress : spineItems[0].href);
@@ -186,54 +230,67 @@ document.addEventListener('DOMContentLoaded', async () => {
     async function loadNav(navPath) {
         try {
             const res = await fetchAsset(navPath);
-            if (!res.ok) return;
+            if (!res.ok) return false;
             const text = await res.text();
             const parser = new DOMParser();
             const doc = parser.parseFromString(text, "text/html");
             
             const nav = doc.querySelector('nav[epub\\:type="toc"]') || doc.querySelector('nav');
             if (nav) {
-                const baseDir = navPath.substring(0, navPath.lastIndexOf('/'));
+                const baseDir = normalizeBookPath(navPath.substring(0, navPath.lastIndexOf('/')));
+                nav.removeAttribute('hidden');
+                nav.hidden = false;
+                nav.removeAttribute('aria-hidden');
+
+                let linkCount = 0;
                 nav.querySelectorAll('a').forEach(a => {
                     const href = a.getAttribute('href');
-                    if (href) {
-                        a.setAttribute('data-src', `${baseDir}/${href}`);
+                    const target = resolveBookHref(baseDir, href);
+                    if (target) {
+                        linkCount += 1;
+                        a.setAttribute('data-src', target);
                         a.href = '#';
-                        a.onclick = (e) => { e.preventDefault(); loadChapter(`${baseDir}/${href}`); };
                     }
                 });
+
+                if (linkCount === 0) return false;
                 tocContent.innerHTML = '';
                 // Import node to ensure it belongs to the current document
                 const importedNav = document.importNode(nav, true);
                 tocContent.appendChild(importedNav);
+                return true;
             }
-        } catch (e) { console.warn("Failed to load NAV", e); }
+            return false;
+        } catch (e) {
+            console.warn("Failed to load NAV", e);
+            return false;
+        }
     }
 
     async function loadNcx(path) {
         try {
             const res = await fetchAsset(path);
-            if (!res.ok) return;
+            if (!res.ok) return false;
             const text = await res.text();
             const parser = new DOMParser();
             const doc = parser.parseFromString(text, "text/xml");
             const navMap = doc.getElementsByTagName('navMap')[0];
-            if (!navMap) return;
+            if (!navMap) return false;
 
             const list = document.createElement('ul');
-            const baseDir = path.substring(0, path.lastIndexOf('/'));
+            const baseDir = normalizeBookPath(path.substring(0, path.lastIndexOf('/')));
 
             function processNavPoint(point) {
                 const label = point.getElementsByTagName('navLabel')[0].getElementsByTagName('text')[0].textContent;
                 const content = point.getElementsByTagName('content')[0].getAttribute('src');
-                const fullPath = `${baseDir}/${content}`;
+                const fullPath = resolveBookHref(baseDir, content);
+                if (!fullPath) return null;
 
                 const li = document.createElement('li');
                 const a = document.createElement('a');
                 a.textContent = label;
                 a.href = '#';
                 a.setAttribute('data-src', fullPath);
-                a.onclick = (e) => { e.preventDefault(); loadChapter(fullPath); };
                 li.appendChild(a);
                 
                 const children = Array.from(point.children).filter(c => c.nodeName.endsWith('navPoint'));
@@ -256,18 +313,28 @@ document.addEventListener('DOMContentLoaded', async () => {
             
             const docTitle = doc.getElementsByTagName('docTitle')[0];
             if(docTitle) titleEl.textContent = docTitle.textContent.trim();
-        } catch(e) { console.warn("Error loading NCX", e); }
+            return true;
+        } catch(e) {
+            console.warn("Error loading NCX", e);
+            return false;
+        }
     }
 
     async function loadChapter(href) {
         if (!href) return;
         const [filePath, anchor] = href.split('#');
-        localStorage.setItem(BOOK_KEY, href);
-        currentSpineIndex = spineItems.findIndex(i => i.href === filePath);
+        const normalizedFilePath = normalizeBookPath(filePath);
+        const normalizedHref = anchor ? `${normalizedFilePath}#${anchor}` : normalizedFilePath;
+
+        localStorage.setItem(BOOK_KEY, normalizedHref);
+        currentSpineIndex = spineItems.findIndex(i => i.href === normalizedFilePath);
         
         // Update Active TOC
         document.querySelectorAll('.toc-content a').forEach(a => a.classList.remove('active'));
-        const activeLink = document.querySelector(`.toc-content a[data-src="${filePath}"]`);
+        const activeLink =
+            document.querySelector(`.toc-content a[data-src="${normalizedHref}"]`) ||
+            document.querySelector(`.toc-content a[data-src="${normalizedFilePath}"]`) ||
+            document.querySelector(`.toc-content a[data-src^="${normalizedFilePath}#"]`);
         if (activeLink) {
             activeLink.classList.add('active');
             activeLink.scrollIntoView({ block: 'center', behavior: 'smooth' });
@@ -275,21 +342,21 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         try {
             contentViewer.style.opacity = '0.5'; 
-            const response = await fetchAsset(filePath);
+            const response = await fetchAsset(normalizedFilePath);
             if (!response.ok) throw new Error(`Status: ${response.status}`);
             
             const htmlText = await response.text();
             const parser = new DOMParser();
             const doc = parser.parseFromString(htmlText, 'text/html');
             
-            await resolveAssetPaths(doc, filePath);
+            await resolveAssetPaths(doc, normalizedFilePath);
             
             const docLang = doc.documentElement.getAttribute('lang') || bookMetadataLang;
             if (docLang) contentViewer.setAttribute('lang', docLang);
 
             contentViewer.innerHTML = doc.body.innerHTML;
             
-            setupInteractions(contentViewer, filePath);
+            setupInteractions(contentViewer, normalizedFilePath);
             optimizeContentImages(contentViewer);
             enhanceCodeBlocks(contentViewer);
             applySettings();
