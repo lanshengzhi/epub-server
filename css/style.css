@@ -664,6 +664,22 @@ a { text-decoration: none; color: inherit; }
     font-family: var(--reader-font);
 }
 
+#content-viewer:lang(zh) {
+    line-break: strict;
+}
+
+#content-viewer:lang(zh) :where(p, li, blockquote, dd, dt) {
+    text-align: justify;
+    text-justify: inter-ideograph;
+}
+
+#content-viewer:lang(zh-Hant),
+#content-viewer:lang(zh-TW),
+#content-viewer:lang(zh-HK),
+#content-viewer:lang(zh-MO) {
+    font-variant-east-asian: traditional;
+}
+
 #content-viewer :where(p, div, span, li, a, blockquote, table, thead, tbody, tfoot, tr, td, th, h1, h2, h3, h4, h5, h6) {
     font-family: var(--reader-font) !important;
 }
@@ -867,6 +883,7 @@ a { text-decoration: none; color: inherit; }
     display: flex;
     flex-direction: column;
     max-height: 80vh;
+    min-width: 0;
 }
 .logs-container {
     background: #111;
@@ -1050,6 +1067,42 @@ ruby {
     justify-content: flex-end;
 
     gap: 10px;
+
+}
+
+.selected-file-row {
+
+    display: flex;
+
+    align-items: baseline;
+
+    gap: 8px;
+
+    min-width: 0;
+
+}
+
+.selected-file-label {
+
+    flex: 0 0 auto;
+
+    white-space: nowrap;
+
+}
+
+.import-filename {
+
+    flex: 1 1 auto;
+
+    min-width: 0;
+
+    overflow: hidden;
+
+    text-overflow: ellipsis;
+
+    white-space: nowrap;
+
+    font-weight: bold;
 
 }
 

@@ -521,14 +521,35 @@ document.addEventListener('DOMContentLoaded', async () => {
         contentViewer.style.setProperty('--reader-font', getFontStack(currentFontProfile));
     }
     
-    function getFontStack(profile) {
-        const stacks = {
-            'serif': '"Merriweather", Georgia, "Times New Roman", Times, serif',
-            'sans': '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
-            'mono': '"Fira Code", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace'
-        };
-        return stacks[profile] || stacks['serif'];
-    }
+	    function getFontStack(profile) {
+	        const cjkSansFallback = [
+	            '"PingFang TC"',
+	            '"Hiragino Sans CNS"',
+	            '"Heiti TC"',
+	            '"Microsoft JhengHei"',
+	            '"Noto Sans TC"',
+	            '"Noto Sans CJK TC"',
+	            '"Source Han Sans TC"',
+	            '"Source Han Sans"'
+	        ].join(', ');
+	
+	        const cjkSerifFallback = [
+	            '"Songti TC"',
+	            '"PMingLiU"',
+	            '"MingLiU"',
+	            '"Noto Serif TC"',
+	            '"Noto Serif CJK TC"',
+	            '"Source Han Serif TC"',
+	            '"Source Han Serif"'
+	        ].join(', ');
+	
+	        const stacks = {
+	            'serif': `"Merriweather", ${cjkSerifFallback}, Georgia, "Times New Roman", Times, serif`,
+	            'sans': `"Inter", ${cjkSansFallback}, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif`,
+	            'mono': '"Fira Code", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace'
+	        };
+	        return stacks[profile] || stacks['serif'];
+	    }
 
     function updateButtons() {
         prevBtn.disabled = currentSpineIndex <= 0;

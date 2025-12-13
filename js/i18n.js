@@ -48,6 +48,8 @@
       'library.suggested_tags': 'Suggested Tags:',
       'library.importing_book': 'Importing Book...',
       'library.uploading_and_processing': 'Uploading and processing...',
+      'library.uploading': 'Uploading...',
+      'library.waiting_server': 'Upload complete, waiting for server response...',
 
       'library.edit_categories': 'Edit Categories',
       'library.add_category_placeholder': 'Add a category...',
@@ -122,6 +124,8 @@
       'library.suggested_tags': '建议标签：',
       'library.importing_book': '正在导入…',
       'library.uploading_and_processing': '正在上传并处理…',
+      'library.uploading': '正在上传…',
+      'library.waiting_server': '上传完成，等待服务器响应…',
 
       'library.edit_categories': '编辑分类',
       'library.add_category_placeholder': '添加分类…',
@@ -196,6 +200,8 @@
       'library.suggested_tags': '候補タグ：',
       'library.importing_book': 'インポート中…',
       'library.uploading_and_processing': 'アップロードして処理中…',
+      'library.uploading': 'アップロード中…',
+      'library.waiting_server': 'アップロード完了。サーバー応答待ち…',
 
       'library.edit_categories': 'カテゴリ編集',
       'library.add_category_placeholder': 'カテゴリを追加…',

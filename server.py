@@ -5,6 +5,8 @@ import re
 import uuid
 import glob
 import json
+import threading
+import time
 from urllib.parse import unquote
 from flask import Flask, request, jsonify, send_from_directory
 from bs4 import BeautifulSoup
@@ -21,6 +23,143 @@ if not os.path.exists(UPLOAD_FOLDER):
 
 if not os.path.exists(LIBRARY_FOLDER):
     os.makedirs(LIBRARY_FOLDER)
+
+# --- Upload Task Tracking (for progress / logs) ---
+UPLOAD_TASKS = {}
+UPLOAD_TASKS_LOCK = threading.Lock()
+UPLOAD_TASK_TTL_SECONDS = 60 * 60  # 1 hour
+
+def _prune_upload_tasks():
+    now = time.time()
+    with UPLOAD_TASKS_LOCK:
+        expired = [k for k, v in UPLOAD_TASKS.items() if now - v.get('created_at', now) > UPLOAD_TASK_TTL_SECONDS]
+        for k in expired:
+            UPLOAD_TASKS.pop(k, None)
+
+def _task_append_log(task_id, message):
+    print(message)
+    with UPLOAD_TASKS_LOCK:
+        task = UPLOAD_TASKS.get(task_id)
+        if not task:
+            return
+        task['logs'].append(message)
+        task['updated_at'] = time.time()
+
+def _task_update(task_id, **fields):
+    with UPLOAD_TASKS_LOCK:
+        task = UPLOAD_TASKS.get(task_id)
+        if not task:
+            return
+        task.update(fields)
+        task['updated_at'] = time.time()
+
+def _process_upload_task(task_id, filepath, filename, categories):
+    extract_path = None
+    try:
+        class TaskLogs:
+            def __init__(self, task_id):
+                self._task_id = task_id
+            def append(self, message):
+                with UPLOAD_TASKS_LOCK:
+                    task = UPLOAD_TASKS.get(self._task_id)
+                    if not task:
+                        return
+                    task['logs'].append(message)
+                    task['updated_at'] = time.time()
+
+        task_logs = TaskLogs(task_id)
+
+        _task_update(task_id, status='running', progress={'phase': 'received', 'current': 0, 'total': 0})
+        _task_append_log(task_id, f"File uploaded: {filename}")
+
+        # 1. Unzip
+        book_name_safe = os.path.splitext(filename)[0]
+        book_name_safe = re.sub(r'[^\w\-\u4e00-\u9fa5]', '_', book_name_safe)
+        extract_path = os.path.join(LIBRARY_FOLDER, book_name_safe)
+
+        # Handle collision
+        if os.path.exists(extract_path):
+            extract_path += "_" + str(uuid.uuid4())[:8]
+
+        _task_update(task_id, progress={'phase': 'extracting', 'current': 0, 'total': 0})
+        _task_append_log(task_id, f"Extracting to: {extract_path}")
+
+        with zipfile.ZipFile(filepath, 'r') as zip_ref:
+            zip_ref.extractall(extract_path)
+
+        _task_append_log(task_id, "Extraction complete.")
+
+        # 2. Process Files
+        # Collect files to process so we can provide progress.
+        files_to_process = []
+        for root, dirs, files in os.walk(extract_path):
+            for file in files:
+                if file.lower().endswith(('.css', '.html', '.xhtml')):
+                    files_to_process.append(os.path.join(root, file))
+
+        total = len(files_to_process)
+        processed = 0
+        _task_update(task_id, progress={'phase': 'processing', 'current': processed, 'total': total})
+        _task_append_log(task_id, f"Processing files: {total}")
+
+        for full_path in files_to_process:
+            name = os.path.basename(full_path)
+            lower = name.lower()
+
+            if lower.endswith('.css'):
+                convert_css_vertical_to_horizontal(full_path, task_logs)
+
+            if lower.endswith(('.html', '.xhtml')):
+                convert_css_vertical_to_horizontal(full_path, task_logs)
+                process_html_content(full_path, task_logs)
+
+            processed += 1
+            if processed == total or processed % 10 == 0:
+                _task_update(task_id, progress={'phase': 'processing', 'current': processed, 'total': total})
+
+        _task_append_log(task_id, "Content processing complete.")
+
+        # Cleanup Upload
+        try:
+            os.remove(filepath)
+        except Exception:
+            pass
+
+        # 3. Save Metadata (Categories) if provided
+        _task_update(task_id, progress={'phase': 'finalizing', 'current': processed, 'total': total})
+        if categories:
+            user_meta = load_user_metadata()
+            book_dir_name = os.path.basename(extract_path)
+            if book_dir_name not in user_meta:
+                user_meta[book_dir_name] = {}
+
+            current_cats = user_meta[book_dir_name].get('categories', [])
+            for cat in categories:
+                cat = (cat or '').strip()
+                if cat and cat not in current_cats:
+                    current_cats.append(cat)
+
+            user_meta[book_dir_name]['categories'] = current_cats
+            save_user_metadata(user_meta)
+            _task_append_log(task_id, f"Added categories: {', '.join(categories)}")
+
+        book_dir_name = os.path.basename(extract_path)
+        _task_update(
+            task_id,
+            status='done',
+            book_dir=book_dir_name,
+            progress={'phase': 'done', 'current': total, 'total': total},
+        )
+        _task_append_log(task_id, "Import finished.")
+
+    except Exception as e:
+        _task_append_log(task_id, f"Error processing: {e}")
+        _task_update(task_id, status='error', error=str(e), progress={'phase': 'error', 'current': 0, 'total': 0})
+        try:
+            if filepath and os.path.exists(filepath):
+                os.remove(filepath)
+        except Exception:
+            pass
 
 # --- Helper Functions ---
 
@@ -376,8 +515,51 @@ def api_user_metadata():
         
         return jsonify({'success': True, 'categories': categories})
 
+@app.route('/api/upload-status/<task_id>')
+def api_upload_status(task_id):
+    _prune_upload_tasks()
+
+    try:
+        since = int(request.args.get('since', '0'))
+    except Exception:
+        since = 0
+    if since < 0:
+        since = 0
+
+    with UPLOAD_TASKS_LOCK:
+        task = UPLOAD_TASKS.get(task_id)
+        if not task:
+            return jsonify({'found': False}), 404
+
+        logs = task.get('logs', [])
+        new_logs = logs[since:]
+        progress = task.get('progress') or {}
+        status = task.get('status')
+        book_dir = task.get('book_dir')
+        error = task.get('error')
+        next_index = len(logs)
+
+    # Compute percent in a stable way for UI.
+    current = int(progress.get('current') or 0)
+    total = int(progress.get('total') or 0)
+    percent = int((current * 100 / total)) if total > 0 else 0
+
+    return jsonify({
+        'found': True,
+        'status': status,
+        'phase': progress.get('phase'),
+        'current': current,
+        'total': total,
+        'percent': percent,
+        'logs': new_logs,
+        'next_index': next_index,
+        'book_dir': book_dir,
+        'error': error,
+    })
+
 @app.route('/api/upload', methods=['POST'])
 def api_upload():
+    _prune_upload_tasks()
     logs = []
     if 'file' not in request.files:
         return jsonify({'error': 'No file part'}), 400
@@ -391,6 +573,31 @@ def api_upload():
         filepath = os.path.join(UPLOAD_FOLDER, filename)
         file.save(filepath)
         log(logs, f"File uploaded: {filename}")
+
+        # Async mode: return immediately and let the client poll for progress/logs.
+        if request.args.get('async') == '1':
+            categories = request.form.getlist('categories')
+            task_id = str(uuid.uuid4())
+            now = time.time()
+            with UPLOAD_TASKS_LOCK:
+                UPLOAD_TASKS[task_id] = {
+                    'id': task_id,
+                    'status': 'queued',
+                    'created_at': now,
+                    'updated_at': now,
+                    'logs': [],
+                    'progress': {'phase': 'queued', 'current': 0, 'total': 0},
+                    'book_dir': None,
+                    'error': None,
+                }
+            _task_append_log(task_id, f"Upload received: {filename}")
+            worker = threading.Thread(
+                target=_process_upload_task,
+                args=(task_id, filepath, filename, categories),
+                daemon=True,
+            )
+            worker.start()
+            return jsonify({'success': True, 'task_id': task_id})
         
         # 1. Unzip
         # Create a directory name based on filename without extension

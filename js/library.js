@@ -14,6 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const uploadLogs = document.getElementById('upload-logs');
     const closeModal = document.getElementById('close-modal');
     const uploadStatus = document.getElementById('upload-status');
+    const uploadTitle = uploadModal ? (uploadModal.querySelector('[data-i18n="library.importing_book"]') || uploadModal.querySelector('h3')) : null;
 
     // Controls
     const sortSelect = document.getElementById('sort-select');
@@ -27,6 +28,57 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentCategory = 'all';
     const UNCATEGORIZED_KEY = '__uncategorized__';
     const VIEW_STORAGE_KEY = 'library_view';
+    let activeUploadTaskId = null;
+    let uploadPollTimer = null;
+    let uploadLogIndex = 0;
+    let uploadConsoleStatus = '';
+    let uploadConsoleLines = [];
+    let uploadAwaitTimer = null;
+    let uploadAwaitStartedAt = 0;
+
+    function renderUploadConsole() {
+        if (!uploadLogs) return;
+        const shouldAutoScroll =
+            uploadLogs.scrollTop + uploadLogs.clientHeight >= uploadLogs.scrollHeight - 24;
+        const parts = [];
+        if (uploadConsoleStatus) parts.push(uploadConsoleStatus, '');
+        if (uploadConsoleLines.length > 0) parts.push(uploadConsoleLines.join('\n'));
+        uploadLogs.innerText = parts.join('\n');
+        if (shouldAutoScroll) uploadLogs.scrollTop = uploadLogs.scrollHeight;
+    }
+
+    function setUploadConsoleStatus(message) {
+        uploadConsoleStatus = message || '';
+        renderUploadConsole();
+    }
+
+    function appendUploadConsoleLines(lines) {
+        if (!lines || lines.length === 0) return;
+        uploadConsoleLines.push(...lines);
+        renderUploadConsole();
+    }
+
+    function setUploadModalConsoleOnly(enabled) {
+        if (uploadTitle) uploadTitle.style.display = enabled ? 'none' : '';
+        if (uploadStatus) uploadStatus.style.display = enabled ? 'none' : '';
+    }
+
+    function stopAwaitServerResponse() {
+        if (uploadAwaitTimer) {
+            window.clearInterval(uploadAwaitTimer);
+            uploadAwaitTimer = null;
+        }
+        uploadAwaitStartedAt = 0;
+    }
+
+    function startAwaitServerResponse() {
+        if (uploadAwaitTimer) return;
+        uploadAwaitStartedAt = Date.now();
+        uploadAwaitTimer = window.setInterval(() => {
+            const seconds = Math.floor((Date.now() - uploadAwaitStartedAt) / 1000);
+            setUploadConsoleStatus(`${t('library.waiting_server')} ${seconds}s`);
+        }, 400);
+    }
 
     function normalizeView(view) {
         return view === 'list' ? 'list' : 'grid';
@@ -489,6 +541,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Show Import Options Modal
             if (importOptionsModal) {
                 importFilename.innerText = file.name;
+                importFilename.title = file.name;
                 importNewTagInput.value = '';
                 
                 renderImportTags();
@@ -507,8 +560,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 importOptionsModal.classList.remove('show');
 
                 // Start Upload Process
-                uploadLogs.innerText = '';
-                uploadStatus.innerText = t('library.starting_upload');
+                uploadConsoleLines = [];
+                uploadConsoleStatus = '';
+                setUploadModalConsoleOnly(true);
+                setUploadConsoleStatus(t('library.importing_book'));
                 closeModal.style.display = 'none';
                 uploadModal.classList.add('show');
 
@@ -520,29 +575,118 @@ document.addEventListener('DOMContentLoaded', () => {
                     formData.append('categories', tag);
                 });
 
+                function stopUploadPolling() {
+                    activeUploadTaskId = null;
+                    uploadLogIndex = 0;
+                    stopAwaitServerResponse();
+                    if (uploadPollTimer) {
+                        window.clearTimeout(uploadPollTimer);
+                        uploadPollTimer = null;
+                    }
+                }
+
+                async function pollUploadStatus(taskId) {
+                    if (activeUploadTaskId !== taskId) return;
+
+                    try {
+                        const res = await fetch(`/api/upload-status/${encodeURIComponent(taskId)}?since=${uploadLogIndex}`);
+                        if (!res.ok) throw new Error(`Status: ${res.status}`);
+                        const data = await res.json();
+                        if (activeUploadTaskId !== taskId) return;
+
+                        if (Array.isArray(data.logs) && data.logs.length > 0) {
+                            appendUploadConsoleLines(data.logs);
+                            uploadLogIndex = typeof data.next_index === 'number' ? data.next_index : (uploadLogIndex + data.logs.length);
+                        }
+
+                        const phase = data.phase || 'processing';
+                        const percent = typeof data.percent === 'number' ? data.percent : 0;
+                        const current = typeof data.current === 'number' ? data.current : 0;
+                        const total = typeof data.total === 'number' ? data.total : 0;
+                        const progressText = total > 0 ? `${percent}% (${current}/${total})` : '';
+                        setUploadConsoleStatus(`${t('library.uploading_and_processing')} ${phase} ${progressText}`.trim());
+
+                        if (data.status === 'done') {
+                            setUploadConsoleStatus(t('library.import_success'));
+                            closeModal.style.display = 'block';
+                            stopUploadPolling();
+                            loadBooks(); // Refresh library
+                            return;
+                        }
+
+                        if (data.status === 'error') {
+                            setUploadConsoleStatus(t('library.import_failed', { error: data.error || t('library.unknown_error') }));
+                            closeModal.style.display = 'block';
+                            stopUploadPolling();
+                            return;
+                        }
+
+                        uploadPollTimer = window.setTimeout(() => pollUploadStatus(taskId), 300);
+                    } catch (error) {
+                        appendUploadConsoleLines([`[poll error] ${error.message}`]);
+                        uploadPollTimer = window.setTimeout(() => pollUploadStatus(taskId), 800);
+                    }
+                }
+
+                stopUploadPolling();
+                setUploadConsoleStatus(t('library.starting_upload'));
+
                 try {
-                    const response = await fetch('/api/upload', {
-                        method: 'POST',
-                        body: formData
-                    });
+                    const xhr = new XMLHttpRequest();
+                    xhr.open('POST', '/api/upload?async=1', true);
+                    let uploadProgressReached100 = false;
 
-                    const result = await response.json();
-                    
-                    if (result.logs) {
-                        uploadLogs.innerText = result.logs.join('\n');
-                    }
+                    xhr.upload.onprogress = (e) => {
+                        if (!e.lengthComputable) return;
+                        const percent = Math.floor((e.loaded / e.total) * 100);
+                        setUploadConsoleStatus(`${t('library.uploading')} ${percent}%`);
+                        if (percent >= 100 && !uploadProgressReached100) {
+                            uploadProgressReached100 = true;
+                            startAwaitServerResponse();
+                        }
+                    };
 
-                    if (result.success) {
-                        uploadStatus.innerText = t('library.import_success');
+                    xhr.onerror = () => {
+                        stopAwaitServerResponse();
+                        setUploadConsoleStatus(t('library.network_error'));
+                        appendUploadConsoleLines(['Upload failed (network error).']);
                         closeModal.style.display = 'block';
-                        loadBooks(); // Refresh library
-                    } else {
-                        uploadStatus.innerText = t('library.import_failed', { error: result.error || t('library.unknown_error') });
-                        closeModal.style.display = 'block';
-                    }
+                    };
+
+                    xhr.onload = () => {
+                        stopAwaitServerResponse();
+                        try {
+                            const result = JSON.parse(xhr.responseText || '{}');
+
+                            if (result.task_id) {
+                                activeUploadTaskId = result.task_id;
+                                uploadLogIndex = 0;
+                                setUploadConsoleStatus(t('library.uploading_and_processing'));
+                                pollUploadStatus(activeUploadTaskId);
+                                return;
+                            }
+
+                            // Backward compatible path: old synchronous response.
+                            if (result.logs) appendUploadConsoleLines(result.logs);
+                            if (result.success) {
+                                setUploadConsoleStatus(t('library.import_success'));
+                                closeModal.style.display = 'block';
+                                loadBooks();
+                            } else {
+                                setUploadConsoleStatus(t('library.import_failed', { error: result.error || t('library.unknown_error') }));
+                                closeModal.style.display = 'block';
+                            }
+                        } catch (e) {
+                            setUploadConsoleStatus(t('library.import_failed', { error: t('library.unknown_error') }));
+                            appendUploadConsoleLines([e.message]);
+                            closeModal.style.display = 'block';
+                        }
+                    };
+
+                    xhr.send(formData);
                 } catch (error) {
-                    uploadStatus.innerText = t('library.network_error');
-                    uploadLogs.innerText += '\n' + error.message;
+                    setUploadConsoleStatus(t('library.network_error'));
+                    appendUploadConsoleLines([error.message]);
                     closeModal.style.display = 'block';
                 }
                 
@@ -563,6 +707,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         closeModal.addEventListener('click', () => {
+            activeUploadTaskId = null;
+            uploadLogIndex = 0;
+            stopAwaitServerResponse();
+            if (uploadPollTimer) {
+                window.clearTimeout(uploadPollTimer);
+                uploadPollTimer = null;
+            }
+            setUploadModalConsoleOnly(false);
             uploadModal.classList.remove('show');
         });
     }
