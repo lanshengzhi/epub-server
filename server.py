@@ -384,6 +384,11 @@ def api_delete_book(book_dir):
     
     try:
         shutil.rmtree(full_path)
+        # Keep user metadata in sync: remove any stored metadata for this book dir.
+        user_meta = load_user_metadata()
+        if book_dir in user_meta:
+            user_meta.pop(book_dir, None)
+            save_user_metadata(user_meta)
         print(f"Deleted book directory: {full_path}")
         return jsonify({'success': True, 'message': f'Book "{book_dir}" deleted.'}), 200
     except Exception as e:

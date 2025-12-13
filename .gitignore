@@ -9,3 +9,4 @@ temp_uploads/
 .DS_Store
 *.swp
 library/
+user_metadata.json
