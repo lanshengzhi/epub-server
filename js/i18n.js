@@ -100,7 +100,31 @@
       'reader.error_generic': 'Error: {message}',
       'reader.width_toast': 'Width: {px}px',
       'reader.font_toast': 'Font: {profile}',
-      'reader.change_font_current': 'Change Font (Current: {profile})'
+      'reader.change_font_current': 'Change Font (Current: {profile})',
+
+      'reader.notes': 'Notes',
+      'reader.notes_title': 'Notes',
+      'reader.no_notes': 'No notes yet.',
+      'reader.note_title': 'Thoughts',
+      'reader.note_placeholder': 'Write your thoughts...',
+
+      'reader.annot_highlight': 'Highlight',
+      'reader.annot_underline': 'Underline',
+      'reader.annot_copy': 'Copy',
+      'reader.annot_note': 'Note',
+      'reader.annot_delete': 'Delete',
+      'reader.annot_add_note': 'Add Note',
+      'reader.annot_edit_note': 'Edit Note',
+      'reader.annot_switch_to_highlight': 'Switch to Highlight',
+      'reader.annot_switch_to_underline': 'Switch to Underline',
+
+      'reader.annotation_single_paragraph_only': 'Please select within a single paragraph.',
+      'reader.annotation_overlap_not_supported': 'Overlapping highlights are not supported yet.',
+      'reader.annotation_save_failed': 'Failed to save highlight.',
+      'reader.annotation_update_failed': 'Failed to update highlight.',
+      'reader.annotation_delete_failed': 'Failed to delete highlight.',
+      'reader.copy_success': 'Copied.',
+      'reader.copy_failed': 'Copy failed.'
     },
     'zh-CN': {
       'app.name': 'EPUB 阅读器',
@@ -181,7 +205,31 @@
       'reader.error_generic': '错误：{message}',
       'reader.width_toast': '宽度：{px}px',
       'reader.font_toast': '字体：{profile}',
-      'reader.change_font_current': '切换字体（当前：{profile}）'
+      'reader.change_font_current': '切换字体（当前：{profile}）',
+
+      'reader.notes': '笔记',
+      'reader.notes_title': '笔记',
+      'reader.no_notes': '暂无笔记',
+      'reader.note_title': '写想法',
+      'reader.note_placeholder': '写下你的想法…',
+
+      'reader.annot_highlight': '高亮',
+      'reader.annot_underline': '下划线',
+      'reader.annot_copy': '复制',
+      'reader.annot_note': '想法',
+      'reader.annot_delete': '删除',
+      'reader.annot_add_note': '写想法',
+      'reader.annot_edit_note': '编辑想法',
+      'reader.annot_switch_to_highlight': '切换为高亮',
+      'reader.annot_switch_to_underline': '切换为下划线',
+
+      'reader.annotation_single_paragraph_only': '暂只支持单段落内划线',
+      'reader.annotation_overlap_not_supported': '暂不支持重叠划线',
+      'reader.annotation_save_failed': '保存划线失败',
+      'reader.annotation_update_failed': '更新划线失败',
+      'reader.annotation_delete_failed': '删除划线失败',
+      'reader.copy_success': '已复制',
+      'reader.copy_failed': '复制失败'
     },
     ja: {
       'app.name': 'EPUB リーダー',
@@ -262,7 +310,31 @@
       'reader.error_generic': 'エラー：{message}',
       'reader.width_toast': '幅：{px}px',
       'reader.font_toast': 'フォント：{profile}',
-      'reader.change_font_current': 'フォント切替（現在：{profile}）'
+      'reader.change_font_current': 'フォント切替（現在：{profile}）',
+
+      'reader.notes': 'ノート',
+      'reader.notes_title': 'ノート',
+      'reader.no_notes': 'まだノートはありません。',
+      'reader.note_title': 'メモ',
+      'reader.note_placeholder': '考えを書いてください…',
+
+      'reader.annot_highlight': 'ハイライト',
+      'reader.annot_underline': '下線',
+      'reader.annot_copy': 'コピー',
+      'reader.annot_note': 'メモ',
+      'reader.annot_delete': '削除',
+      'reader.annot_add_note': 'メモを書く',
+      'reader.annot_edit_note': 'メモを編集',
+      'reader.annot_switch_to_highlight': 'ハイライトに切替',
+      'reader.annot_switch_to_underline': '下線に切替',
+
+      'reader.annotation_single_paragraph_only': '1段落内で選択してください。',
+      'reader.annotation_overlap_not_supported': '重なったハイライトは未対応です。',
+      'reader.annotation_save_failed': 'ハイライトの保存に失敗しました。',
+      'reader.annotation_update_failed': 'ハイライトの更新に失敗しました。',
+      'reader.annotation_delete_failed': 'ハイライトの削除に失敗しました。',
+      'reader.copy_success': 'コピーしました。',
+      'reader.copy_failed': 'コピーできませんでした。'
     }
   };
 

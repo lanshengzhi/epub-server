@@ -447,6 +447,31 @@ def save_user_metadata(data):
     except Exception as e:
         print(f"Error saving user metadata: {e}")
 
+def is_valid_book_dir(book_dir):
+    if not book_dir:
+        return False
+    if ".." in book_dir or book_dir.startswith('/') or book_dir.startswith('\\'):
+        return False
+    full_path = os.path.join(LIBRARY_FOLDER, book_dir)
+    if not os.path.isdir(full_path) or book_dir in IGNORE_DIRS:
+        return False
+    return True
+
+def normalize_annotation_style(style):
+    return 'ul' if str(style).strip().lower() in {'ul', 'underline'} else 'bg'
+
+def sanitize_text_field(value, max_len):
+    if value is None:
+        return None
+    text = str(value)
+    text = text.replace('\r\n', '\n').replace('\r', '\n')
+    text = text.strip()
+    if not text:
+        return None
+    if len(text) > max_len:
+        text = text[:max_len]
+    return text
+
 # --- Routes ---
 
 @app.route('/')
@@ -514,6 +539,124 @@ def api_user_metadata():
         save_user_metadata(user_meta)
         
         return jsonify({'success': True, 'categories': categories})
+
+@app.route('/api/books/<book_dir>/annotations', methods=['GET', 'POST'])
+def api_book_annotations(book_dir):
+    if not is_valid_book_dir(book_dir):
+        return jsonify({'error': 'Invalid book directory provided.'}), 400
+
+    user_meta = load_user_metadata()
+    if book_dir not in user_meta:
+        user_meta[book_dir] = {}
+
+    if request.method == 'GET':
+        annotations = user_meta[book_dir].get('annotations', [])
+        return jsonify({'success': True, 'annotations': annotations})
+
+    data = request.get_json(silent=True) or {}
+    href = data.get('href')
+    anchor_id = data.get('anchorId')
+    start = data.get('start')
+    end = data.get('end')
+    style = normalize_annotation_style(data.get('style'))
+    selected_text = sanitize_text_field(data.get('text'), 2000)
+    note = sanitize_text_field(data.get('note'), 8000)
+    chapter_title = sanitize_text_field(data.get('chapterTitle'), 300)
+
+    if not isinstance(href, str) or not href.strip():
+        return jsonify({'error': 'Missing href'}), 400
+    href = href.strip()
+    parts = [p for p in href.split('/') if p != '']
+    if not parts or parts[0] != book_dir or '..' in parts or href.startswith('/'):
+        return jsonify({'error': 'Invalid href'}), 400
+    if not isinstance(anchor_id, str) or not anchor_id.strip():
+        return jsonify({'error': 'Missing anchorId'}), 400
+
+    try:
+        start = int(start)
+        end = int(end)
+    except Exception:
+        return jsonify({'error': 'Invalid start/end'}), 400
+    if start < 0 or end <= start:
+        return jsonify({'error': 'Invalid start/end'}), 400
+
+    now_ms = int(time.time() * 1000)
+    annotation = {
+        'id': str(uuid.uuid4()),
+        'href': href,
+        'anchorId': anchor_id.strip(),
+        'start': start,
+        'end': end,
+        'style': style,
+        'text': selected_text or '',
+        'note': note or '',
+        'chapterTitle': chapter_title or '',
+        'createdAt': now_ms,
+        'updatedAt': now_ms,
+    }
+
+    annotations = user_meta[book_dir].get('annotations', [])
+    if not isinstance(annotations, list):
+        annotations = []
+    annotations.append(annotation)
+    user_meta[book_dir]['annotations'] = annotations
+    save_user_metadata(user_meta)
+
+    return jsonify({'success': True, 'annotation': annotation})
+
+@app.route('/api/books/<book_dir>/annotations/<anno_id>', methods=['PUT', 'DELETE'])
+def api_book_annotation_item(book_dir, anno_id):
+    if not is_valid_book_dir(book_dir):
+        return jsonify({'error': 'Invalid book directory provided.'}), 400
+
+    user_meta = load_user_metadata()
+    if book_dir not in user_meta:
+        user_meta[book_dir] = {}
+
+    annotations = user_meta[book_dir].get('annotations', [])
+    if not isinstance(annotations, list):
+        annotations = []
+
+    index = next((i for i, a in enumerate(annotations) if a.get('id') == anno_id), None)
+    if index is None:
+        return jsonify({'error': 'Annotation not found'}), 404
+
+    if request.method == 'DELETE':
+        annotations.pop(index)
+        user_meta[book_dir]['annotations'] = annotations
+        save_user_metadata(user_meta)
+        return jsonify({'success': True})
+
+    data = request.get_json(silent=True) or {}
+    updated = False
+
+    if 'style' in data:
+        annotations[index]['style'] = normalize_annotation_style(data.get('style'))
+        updated = True
+
+    if 'note' in data:
+        note = sanitize_text_field(data.get('note'), 8000)
+        annotations[index]['note'] = note or ''
+        updated = True
+
+    if 'chapterTitle' in data:
+        chapter_title = sanitize_text_field(data.get('chapterTitle'), 300)
+        annotations[index]['chapterTitle'] = chapter_title or ''
+        updated = True
+
+    if 'text' in data:
+        selected_text = sanitize_text_field(data.get('text'), 2000)
+        annotations[index]['text'] = selected_text or ''
+        updated = True
+
+    if not updated:
+        return jsonify({'success': True, 'annotation': annotations[index]})
+
+    annotations[index]['updatedAt'] = int(time.time() * 1000)
+    user_meta[book_dir]['annotations'] = annotations
+    save_user_metadata(user_meta)
+
+    return jsonify({'success': True, 'annotation': annotations[index]})
 
 @app.route('/api/upload-status/<task_id>')
 def api_upload_status(task_id):

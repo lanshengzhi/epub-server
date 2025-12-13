@@ -28,6 +28,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     const titleEl = document.getElementById('book-title');
     const prevBtn = document.getElementById('prev-chapter');
     const nextBtn = document.getElementById('next-chapter');
+    const notesBtn = document.getElementById('notes-btn');
+    const selectionToolbar = document.getElementById('selection-toolbar');
+    const annoMenu = document.getElementById('anno-menu');
+    const noteModal = document.getElementById('note-modal');
+    const noteInput = document.getElementById('note-input');
+    const noteSelectedText = document.getElementById('note-selected-text');
+    const noteCancelBtn = document.getElementById('note-cancel');
+    const noteSaveBtn = document.getElementById('note-save');
+    const noteStyleBgBtn = document.getElementById('note-style-bg');
+    const noteStyleUlBtn = document.getElementById('note-style-ul');
+    const notesModal = document.getElementById('notes-modal');
+    const notesList = document.getElementById('notes-list');
+    const notesCloseBtn = document.getElementById('notes-close');
     
 	    // Config
 	    const BOOK_KEY = `progress_${bookDir}`;
@@ -36,6 +49,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 	    const PROGRESS_VERSION = 3;
 	    const READING_BLOCK_SELECTOR = 'p, li, blockquote, h1, h2, h3, h4, h5, h6, dt, dd';
 	    const AUTO_ANCHOR_PREFIX = '__epub_auto_';
+        const ANNOTATION_STYLE_BG = 'bg';
+        const ANNOTATION_STYLE_UL = 'ul';
+        const ANNOTATIONS_API_BASE = `/api/books/${encodeURIComponent(bookDir)}/annotations`;
 
 	    let toastTimer = null;
 	    function showToast(message) {
@@ -46,6 +62,573 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (toastTimer) window.clearTimeout(toastTimer);
         toastTimer = window.setTimeout(() => toast.classList.remove('show'), TOAST_DURATION_MS);
     }
+
+        // --- Annotations (Highlights / Notes) ---
+        let annotations = [];
+        let annotationsLoadPromise = null;
+        let currentChapterTitle = null;
+        let selectionContext = null;
+        let activeAnnoId = null;
+        let noteModalMode = null; // 'create' | 'edit'
+        let noteModalAnnoId = null;
+        let noteModalPendingContext = null;
+        let noteModalStyle = ANNOTATION_STYLE_BG;
+
+        function normalizeAnnotationStyle(style) {
+            const raw = String(style || '').trim().toLowerCase();
+            if (raw === ANNOTATION_STYLE_UL || raw === 'underline') return ANNOTATION_STYLE_UL;
+            return ANNOTATION_STYLE_BG;
+        }
+
+        function clearTextSelection() {
+            const sel = typeof window.getSelection === 'function' ? window.getSelection() : null;
+            if (!sel) return;
+            try {
+                sel.removeAllRanges();
+            } catch {}
+        }
+
+        async function copyToClipboard(text) {
+            const value = String(text || '');
+            if (!value) return false;
+            try {
+                if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+                    await navigator.clipboard.writeText(value);
+                    return true;
+                }
+            } catch {}
+
+            try {
+                const textarea = document.createElement('textarea');
+                textarea.value = value;
+                textarea.setAttribute('readonly', '');
+                textarea.style.position = 'fixed';
+                textarea.style.left = '-9999px';
+                textarea.style.top = '0';
+                document.body.appendChild(textarea);
+                textarea.focus();
+                textarea.select();
+                const ok = document.execCommand('copy');
+                document.body.removeChild(textarea);
+                return !!ok;
+            } catch {
+                return false;
+            }
+        }
+
+        function isNodeInsideContent(node) {
+            return !!(node && contentViewer && contentViewer.contains(node.nodeType === 1 ? node : node.parentNode));
+        }
+
+        function getSelectionRangeInContent() {
+            const sel = typeof window.getSelection === 'function' ? window.getSelection() : null;
+            if (!sel || sel.rangeCount === 0 || sel.isCollapsed) return null;
+            const range = sel.getRangeAt(0);
+            if (!range) return null;
+            const anchorNode = sel.anchorNode;
+            const focusNode = sel.focusNode;
+            if (!isNodeInsideContent(anchorNode) && !isNodeInsideContent(focusNode)) return null;
+            return range;
+        }
+
+        function getBlockForNode(node) {
+            if (!node) return null;
+            const el = node.nodeType === 1 ? node : node.parentElement;
+            if (!el || typeof el.closest !== 'function') return null;
+            const block = el.closest(READING_BLOCK_SELECTOR);
+            return block && contentViewer.contains(block) ? block : null;
+        }
+
+        function computeOffsetsWithinBlock(block, range) {
+            const prefix = document.createRange();
+            prefix.selectNodeContents(block);
+            prefix.setEnd(range.startContainer, range.startOffset);
+            const start = prefix.toString().length;
+            const selectedText = range.toString();
+            const end = start + selectedText.length;
+            return { start, end, text: selectedText };
+        }
+
+        function getSelectionContextFromWindow() {
+            if (!currentChapterHref) return null;
+            const range = getSelectionRangeInContent();
+            if (!range) return null;
+
+            const startBlock = getBlockForNode(range.startContainer);
+            const endBlock = getBlockForNode(range.endContainer);
+            if (!startBlock || !endBlock || startBlock !== endBlock) {
+                const text = range.toString();
+                if (!text || !text.trim()) return null;
+                return {
+                    href: currentChapterHref,
+                    text,
+                    chapterTitle: currentChapterTitle,
+                    error: 'multi_block'
+                };
+            }
+
+            const blockId = startBlock.id;
+            if (!blockId) {
+                return { error: 'missing_anchor' };
+            }
+
+            const { start, end, text } = computeOffsetsWithinBlock(startBlock, range);
+            if (!text || !text.trim() || end <= start) return null;
+
+            return {
+                href: currentChapterHref,
+                anchorId: blockId,
+                start,
+                end,
+                text,
+                chapterTitle: currentChapterTitle
+            };
+        }
+
+        function positionFloatingEl(el, rect, { offset = 10 } = {}) {
+            if (!el || !rect) return;
+            const viewportW = window.innerWidth || document.documentElement.clientWidth || 0;
+            const viewportH = window.innerHeight || document.documentElement.clientHeight || 0;
+            el.style.left = '0px';
+            el.style.top = '0px';
+            el.classList.add('show');
+
+            const { width, height } = el.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            let left = centerX - width / 2;
+            left = Math.max(8, Math.min(viewportW - width - 8, left));
+
+            let top = rect.top - height - offset;
+            if (top < 8) top = rect.bottom + offset;
+            top = Math.max(8, Math.min(viewportH - height - 8, top));
+
+            el.style.left = `${left}px`;
+            el.style.top = `${top}px`;
+        }
+
+        function showSelectionToolbar(context) {
+            if (!selectionToolbar) return;
+            selectionContext = context;
+
+            const range = getSelectionRangeInContent();
+            if (!range) {
+                selectionToolbar.classList.remove('show');
+                return;
+            }
+
+            const rects = range.getClientRects();
+            const rect = rects && rects.length > 0 ? rects[0] : range.getBoundingClientRect();
+            if (!rect || (rect.width === 0 && rect.height === 0)) {
+                selectionToolbar.classList.remove('show');
+                return;
+            }
+            positionFloatingEl(selectionToolbar, rect, { offset: 12 });
+            selectionToolbar.setAttribute('aria-hidden', 'false');
+        }
+
+        function hideSelectionToolbar() {
+            if (!selectionToolbar) return;
+            selectionToolbar.classList.remove('show');
+            selectionToolbar.setAttribute('aria-hidden', 'true');
+            selectionContext = null;
+        }
+
+        function hideAnnoMenu() {
+            if (!annoMenu) return;
+            annoMenu.classList.remove('show');
+            annoMenu.setAttribute('aria-hidden', 'true');
+            activeAnnoId = null;
+        }
+
+        function updateSelectionUI() {
+            const ctx = getSelectionContextFromWindow();
+            if (!ctx) {
+                hideSelectionToolbar();
+                return;
+            }
+            if (ctx.error && ctx.error !== 'multi_block') {
+                hideSelectionToolbar();
+                return;
+            }
+            showSelectionToolbar(ctx);
+        }
+
+        function unwrapElement(el) {
+            if (!el || !el.parentNode) return;
+            const parent = el.parentNode;
+            while (el.firstChild) parent.insertBefore(el.firstChild, el);
+            parent.removeChild(el);
+        }
+
+        function clearAnnotationSpans(container) {
+            if (!container) return;
+            const spans = Array.from(container.querySelectorAll('span.anno[data-anno-id]'));
+            spans.forEach(unwrapElement);
+        }
+
+        function buildRangeFromOffsets(block, start, end) {
+            const walker = document.createTreeWalker(block, NodeFilter.SHOW_TEXT, null);
+            let node = walker.nextNode();
+            let pos = 0;
+            let startNode = null;
+            let startOffset = 0;
+            let endNode = null;
+            let endOffset = 0;
+
+            while (node) {
+                const len = node.nodeValue ? node.nodeValue.length : 0;
+                if (startNode === null && pos + len >= start) {
+                    startNode = node;
+                    startOffset = Math.max(0, start - pos);
+                }
+                if (pos + len >= end) {
+                    endNode = node;
+                    endOffset = Math.max(0, end - pos);
+                    break;
+                }
+                pos += len;
+                node = walker.nextNode();
+            }
+
+            if (!startNode || !endNode) return null;
+            const range = document.createRange();
+            try {
+                range.setStart(startNode, startOffset);
+                range.setEnd(endNode, endOffset);
+            } catch {
+                return null;
+            }
+            return range;
+        }
+
+        function applyAnnotationSpan(annotation, container) {
+            if (!annotation || !container) return;
+            const block = container.querySelector(`#${CSS.escape(annotation.anchorId)}`);
+            if (!block) return;
+
+            const start = Number(annotation.start);
+            const end = Number(annotation.end);
+            if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return;
+
+            const range = buildRangeFromOffsets(block, start, end);
+            if (!range || range.collapsed) return;
+
+            const wrapper = document.createElement('span');
+            wrapper.className = 'anno';
+            wrapper.dataset.annoId = annotation.id;
+            wrapper.dataset.style = annotation.style;
+            if (normalizeAnnotationStyle(annotation.style) === ANNOTATION_STYLE_UL) wrapper.classList.add('anno-ul');
+            else wrapper.classList.add('anno-bg');
+            if (annotation.note && String(annotation.note).trim()) wrapper.classList.add('anno-has-note');
+
+            try {
+                const frag = range.extractContents();
+                wrapper.appendChild(frag);
+                range.insertNode(wrapper);
+            } catch (e) {
+                console.warn('Failed to apply annotation span', e);
+            }
+        }
+
+        function findAnnotationById(id) {
+            return annotations.find(a => a && a.id === id) || null;
+        }
+
+        function isOverlappingAnnotation(ctx) {
+            if (!ctx || !ctx.href || !ctx.anchorId) return false;
+            const start = Number(ctx.start);
+            const end = Number(ctx.end);
+            if (!Number.isFinite(start) || !Number.isFinite(end)) return false;
+            return annotations.some(a => {
+                if (!a || a.href !== ctx.href || a.anchorId !== ctx.anchorId) return false;
+                const aStart = Number(a.start);
+                const aEnd = Number(a.end);
+                if (!Number.isFinite(aStart) || !Number.isFinite(aEnd)) return false;
+                return start < aEnd && aStart < end;
+            });
+        }
+
+        async function ensureAnnotationsLoaded() {
+            if (annotationsLoadPromise) return annotationsLoadPromise;
+            annotationsLoadPromise = (async () => {
+                try {
+                    const res = await fetch(ANNOTATIONS_API_BASE);
+                    if (!res.ok) throw new Error(`Status: ${res.status}`);
+                    const data = await res.json();
+                    annotations = Array.isArray(data.annotations) ? data.annotations : [];
+                } catch (e) {
+                    console.warn('Failed to load annotations', e);
+                    annotations = [];
+                }
+            })();
+            return annotationsLoadPromise;
+        }
+
+        async function refreshAnnotations({ silent = false } = {}) {
+            annotationsLoadPromise = null;
+            await ensureAnnotationsLoaded();
+            if (!silent && currentChapterHref) {
+                clearAnnotationSpans(contentViewer);
+                const chapterAnnos = annotations.filter(a => a && a.href === currentChapterHref);
+                chapterAnnos.forEach(a => applyAnnotationSpan(a, contentViewer));
+            }
+        }
+
+        async function apiCreateAnnotation(payload) {
+            const res = await fetch(ANNOTATIONS_API_BASE, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            if (!res.ok) throw new Error(`Status: ${res.status}`);
+            const data = await res.json();
+            if (!data || !data.annotation) throw new Error('Missing annotation');
+            return data.annotation;
+        }
+
+        async function apiUpdateAnnotation(id, patch) {
+            const res = await fetch(`${ANNOTATIONS_API_BASE}/${encodeURIComponent(id)}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(patch)
+            });
+            if (!res.ok) throw new Error(`Status: ${res.status}`);
+            const data = await res.json();
+            if (!data || !data.annotation) throw new Error('Missing annotation');
+            return data.annotation;
+        }
+
+        async function apiDeleteAnnotation(id) {
+            const res = await fetch(`${ANNOTATIONS_API_BASE}/${encodeURIComponent(id)}`, { method: 'DELETE' });
+            if (!res.ok) throw new Error(`Status: ${res.status}`);
+            const data = await res.json().catch(() => ({}));
+            if (data && data.success === false) throw new Error('Delete failed');
+            return true;
+        }
+
+        async function renderAnnotationsForChapter(href, requestId) {
+            await ensureAnnotationsLoaded();
+            if (requestId !== undefined && requestId !== loadChapterRequestId) return;
+            clearAnnotationSpans(contentViewer);
+            const chapterAnnos = annotations.filter(a => a && a.href === href);
+            chapterAnnos.forEach(a => applyAnnotationSpan(a, contentViewer));
+        }
+
+        async function createAnnotationFromContext(ctx, { style, note } = {}) {
+            if (!ctx) return;
+            await ensureAnnotationsLoaded();
+            if (ctx.error === 'multi_block') {
+                showToast(t('reader.annotation_single_paragraph_only'));
+                return;
+            }
+            if (ctx.error) return;
+
+            if (isOverlappingAnnotation(ctx)) {
+                showToast(t('reader.annotation_overlap_not_supported'));
+                return;
+            }
+
+            const created = await apiCreateAnnotation({
+                href: ctx.href,
+                anchorId: ctx.anchorId,
+                start: ctx.start,
+                end: ctx.end,
+                style: normalizeAnnotationStyle(style),
+                text: ctx.text,
+                note: note ? String(note) : '',
+                chapterTitle: ctx.chapterTitle
+            });
+            annotations.push(created);
+            if (created.href === currentChapterHref) applyAnnotationSpan(created, contentViewer);
+            return created;
+        }
+
+        function openNotesModal() {
+            if (!notesModal) return;
+            notesModal.classList.add('show');
+        }
+
+        function closeNotesModal() {
+            if (!notesModal) return;
+            notesModal.classList.remove('show');
+        }
+
+        function renderNotesList() {
+            if (!notesList) return;
+            notesList.innerHTML = '';
+
+            const items = annotations
+                .filter(a => a && a.note && String(a.note).trim())
+                .sort((a, b) => Number(b.updatedAt || 0) - Number(a.updatedAt || 0));
+
+            if (items.length === 0) {
+                const empty = document.createElement('div');
+                empty.className = 'notes-empty';
+                empty.textContent = t('reader.no_notes');
+                notesList.appendChild(empty);
+                return;
+            }
+
+            items.forEach(anno => {
+                const row = document.createElement('button');
+                row.type = 'button';
+                row.className = 'note-item';
+                row.addEventListener('click', () => {
+                    closeNotesModal();
+                    loadChapter(`${anno.href}#${anno.anchorId}`);
+                });
+
+                const title = document.createElement('div');
+                title.className = 'note-item-title';
+                title.textContent = anno.chapterTitle || anno.text || '';
+
+                const note = document.createElement('div');
+                note.className = 'note-item-note';
+                note.textContent = String(anno.note || '');
+
+                row.appendChild(title);
+                row.appendChild(note);
+                notesList.appendChild(row);
+            });
+        }
+
+        function openNoteModal({ mode, annoId, context, style }) {
+            if (!noteModal || !noteInput) return;
+            noteModalMode = mode;
+            noteModalAnnoId = annoId || null;
+            noteModalPendingContext = context || null;
+            noteModalStyle = normalizeAnnotationStyle(style);
+
+            if (noteSelectedText) {
+                const text = context && context.text ? String(context.text).trim() : '';
+                noteSelectedText.textContent = text ? text : '';
+                noteSelectedText.style.display = text ? '' : 'none';
+            }
+
+            setNoteModalStyle(noteModalStyle);
+
+            if (mode === 'edit' && annoId) {
+                const anno = findAnnotationById(annoId);
+                noteInput.value = (anno && anno.note) ? String(anno.note) : '';
+            } else {
+                noteInput.value = '';
+            }
+
+            noteModal.classList.add('show');
+            noteInput.focus();
+        }
+
+        function setNoteModalStyle(style) {
+            noteModalStyle = normalizeAnnotationStyle(style);
+            if (!noteStyleBgBtn || !noteStyleUlBtn) return;
+            const isUl = noteModalStyle === ANNOTATION_STYLE_UL;
+            noteStyleBgBtn.classList.toggle('active', !isUl);
+            noteStyleUlBtn.classList.toggle('active', isUl);
+        }
+
+        function closeNoteModal() {
+            if (!noteModal) return;
+            noteModal.classList.remove('show');
+            noteModalMode = null;
+            noteModalAnnoId = null;
+            noteModalPendingContext = null;
+            noteModalStyle = ANNOTATION_STYLE_BG;
+        }
+
+        async function saveNoteModal() {
+            if (!noteInput) return;
+            if (noteModalMode === 'edit' && noteModalAnnoId) {
+                const note = String(noteInput.value || '').trim();
+                try {
+                    const existing = findAnnotationById(noteModalAnnoId);
+                    const patch = { note };
+                    if (existing && normalizeAnnotationStyle(existing.style) !== noteModalStyle) {
+                        patch.style = noteModalStyle;
+                    }
+                    const updated = await apiUpdateAnnotation(noteModalAnnoId, patch);
+                    const idx = annotations.findIndex(a => a && a.id === noteModalAnnoId);
+                    if (idx !== -1) annotations[idx] = updated;
+                    const spans = Array.from(contentViewer.querySelectorAll(`span.anno[data-anno-id="${CSS.escape(noteModalAnnoId)}"]`));
+                    spans.forEach(s => {
+                        const hasNote = updated.note && String(updated.note).trim();
+                        s.classList.toggle('anno-has-note', !!hasNote);
+                        s.classList.toggle('anno-ul', normalizeAnnotationStyle(updated.style) === ANNOTATION_STYLE_UL);
+                        s.classList.toggle('anno-bg', normalizeAnnotationStyle(updated.style) !== ANNOTATION_STYLE_UL);
+                        s.dataset.style = updated.style;
+                    });
+                    closeNoteModal();
+                    renderNotesList();
+                } catch (e) {
+                    console.warn(e);
+                    showToast(t('reader.annotation_update_failed'));
+                }
+                return;
+            }
+
+            const note = String(noteInput.value || '').trim();
+            if (!note) {
+                closeNoteModal();
+                return;
+            }
+
+            const ctx = noteModalPendingContext;
+            if (!ctx) {
+                closeNoteModal();
+                return;
+            }
+            await ensureAnnotationsLoaded();
+            if (isOverlappingAnnotation(ctx)) {
+                closeNoteModal();
+                showToast(t('reader.annotation_overlap_not_supported'));
+                return;
+            }
+
+            try {
+                const created = await apiCreateAnnotation({
+                    href: ctx.href,
+                    anchorId: ctx.anchorId,
+                    start: ctx.start,
+                    end: ctx.end,
+                    style: noteModalStyle,
+                    text: ctx.text,
+                    note,
+                    chapterTitle: ctx.chapterTitle
+                });
+                annotations.push(created);
+                if (created.href === currentChapterHref) applyAnnotationSpan(created, contentViewer);
+                closeNoteModal();
+                clearTextSelection();
+                renderNotesList();
+            } catch (e) {
+                console.warn(e);
+                showToast(t('reader.annotation_save_failed'));
+            }
+        }
+
+        function openAnnoMenuForSpan(span) {
+            if (!span || !annoMenu) return;
+            const annoId = span.dataset.annoId;
+            const anno = annoId ? findAnnotationById(annoId) : null;
+            if (!anno) return;
+
+            activeAnnoId = anno.id;
+
+            const toggleBtn = annoMenu.querySelector('[data-action="toggle-style"]');
+            const editBtn = annoMenu.querySelector('[data-action="edit-note"]');
+            if (toggleBtn) {
+                toggleBtn.textContent =
+                    normalizeAnnotationStyle(anno.style) === ANNOTATION_STYLE_UL
+                        ? t('reader.annot_switch_to_highlight')
+                        : t('reader.annot_switch_to_underline');
+            }
+            if (editBtn) {
+                editBtn.textContent = anno.note && String(anno.note).trim() ? t('reader.annot_edit_note') : t('reader.annot_add_note');
+            }
+
+            const rect = span.getBoundingClientRect();
+            positionFloatingEl(annoMenu, rect, { offset: 10 });
+            annoMenu.setAttribute('aria-hidden', 'false');
+        }
 
 	    function normalizeBookPath(path) {
 	        if (!path) return path;
@@ -435,6 +1018,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 	        currentSpineIndex = spineItems.findIndex(i => i.href === normalizedFilePath);
 	        currentChapterHref = normalizedFilePath;
+	        hideSelectionToolbar();
+	        hideAnnoMenu();
 	        
 	        // Update Active TOC
 	        document.querySelectorAll('.toc-content a').forEach(a => a.classList.remove('active'));
@@ -446,6 +1031,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             activeLink.classList.add('active');
             activeLink.scrollIntoView({ block: 'center', behavior: 'smooth' });
         }
+	        currentChapterTitle = activeLink ? activeLink.textContent : null;
 
 	        const shouldUpdateLastReadAt = !(options && options.restore);
 	        writeProgress({
@@ -491,6 +1077,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 	            // Swap Content
 	            contentViewer.innerHTML = doc.body.innerHTML;
 	            ensureAutoAnchors(contentViewer);
+	            await renderAnnotationsForChapter(normalizedFilePath, requestId);
             
             // Animation: Cleanup Exit & Start Enter Phase
             if (direction) {
@@ -875,6 +1462,191 @@ document.addEventListener('DOMContentLoaded', async () => {
         updateFontChangeTitle();
     }
 
+        // --- Highlight / Notes UI ---
+        if (notesBtn) {
+            notesBtn.addEventListener('click', async () => {
+                hideSelectionToolbar();
+                hideAnnoMenu();
+                await refreshAnnotations({ silent: true });
+                renderNotesList();
+                openNotesModal();
+            });
+        }
+
+        if (notesCloseBtn) {
+            notesCloseBtn.addEventListener('click', () => closeNotesModal());
+        }
+        if (notesModal) {
+            notesModal.addEventListener('click', (e) => {
+                if (e.target === notesModal) closeNotesModal();
+            });
+        }
+
+        if (noteCancelBtn) {
+            noteCancelBtn.addEventListener('click', () => closeNoteModal());
+        }
+        if (noteSaveBtn) {
+            noteSaveBtn.addEventListener('click', () => saveNoteModal());
+        }
+        if (noteModal) {
+            noteModal.addEventListener('click', (e) => {
+                if (e.target === noteModal) closeNoteModal();
+            });
+        }
+        if (noteStyleBgBtn) noteStyleBgBtn.addEventListener('click', () => setNoteModalStyle(ANNOTATION_STYLE_BG));
+        if (noteStyleUlBtn) noteStyleUlBtn.addEventListener('click', () => setNoteModalStyle(ANNOTATION_STYLE_UL));
+
+        if (selectionToolbar) {
+            selectionToolbar.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+            });
+            selectionToolbar.addEventListener('click', async (e) => {
+                const btn = e.target.closest('button[data-action]');
+                if (!btn) return;
+                const action = btn.dataset.action;
+                const ctx = selectionContext;
+                if (!ctx) return;
+
+                hideAnnoMenu();
+
+                if (action === 'copy') {
+                    const ok = await copyToClipboard(ctx.text);
+                    showToast(ok ? t('reader.copy_success') : t('reader.copy_failed'));
+                    hideSelectionToolbar();
+                    return;
+                }
+
+                if (action === 'note') {
+                    if (ctx.error === 'multi_block') {
+                        showToast(t('reader.annotation_single_paragraph_only'));
+                        return;
+                    }
+                    if (ctx.error) return;
+                    hideSelectionToolbar();
+                    openNoteModal({ mode: 'create', annoId: null, context: ctx, style: ANNOTATION_STYLE_BG });
+                    return;
+                }
+
+                if (action === 'highlight' || action === 'underline') {
+                    hideSelectionToolbar();
+                    try {
+                        await createAnnotationFromContext(ctx, {
+                            style: action === 'underline' ? ANNOTATION_STYLE_UL : ANNOTATION_STYLE_BG
+                        });
+                        clearTextSelection();
+                    } catch (err) {
+                        console.warn(err);
+                        showToast(t('reader.annotation_save_failed'));
+                    }
+                }
+            });
+        }
+
+        let selectionChangeTimer = null;
+        document.addEventListener('selectionchange', () => {
+            if (noteModal && noteModal.classList.contains('show')) return;
+            if (notesModal && notesModal.classList.contains('show')) return;
+            if (selectionChangeTimer) window.clearTimeout(selectionChangeTimer);
+            selectionChangeTimer = window.setTimeout(() => updateSelectionUI(), 80);
+        });
+
+        if (contentViewer) {
+            contentViewer.addEventListener('mouseup', () => {
+                if (noteModal && noteModal.classList.contains('show')) return;
+                if (notesModal && notesModal.classList.contains('show')) return;
+                window.setTimeout(() => updateSelectionUI(), 0);
+            });
+
+            contentViewer.addEventListener('touchend', () => {
+                if (noteModal && noteModal.classList.contains('show')) return;
+                if (notesModal && notesModal.classList.contains('show')) return;
+                window.setTimeout(() => updateSelectionUI(), 0);
+            }, { passive: true });
+
+            contentViewer.addEventListener('click', (e) => {
+                const span = e.target.closest('span.anno[data-anno-id]');
+                if (!span) return;
+                if (hasActiveTextSelectionInContent()) return;
+                e.preventDefault();
+                e.stopPropagation();
+                hideSelectionToolbar();
+                openAnnoMenuForSpan(span);
+            });
+        }
+
+        if (annoMenu) {
+            annoMenu.addEventListener('click', async (e) => {
+                const btn = e.target.closest('button[data-action]');
+                if (!btn) return;
+                const action = btn.dataset.action;
+                const anno = activeAnnoId ? findAnnotationById(activeAnnoId) : null;
+                if (!anno) {
+                    hideAnnoMenu();
+                    return;
+                }
+
+                if (action === 'toggle-style') {
+                    const nextStyle =
+                        normalizeAnnotationStyle(anno.style) === ANNOTATION_STYLE_UL ? ANNOTATION_STYLE_BG : ANNOTATION_STYLE_UL;
+                    try {
+                        const updated = await apiUpdateAnnotation(anno.id, { style: nextStyle });
+                        const idx = annotations.findIndex(a => a && a.id === anno.id);
+                        if (idx !== -1) annotations[idx] = updated;
+                        const spans = Array.from(contentViewer.querySelectorAll(`span.anno[data-anno-id="${CSS.escape(anno.id)}"]`));
+                        spans.forEach(s => {
+                            s.classList.toggle('anno-ul', normalizeAnnotationStyle(updated.style) === ANNOTATION_STYLE_UL);
+                            s.classList.toggle('anno-bg', normalizeAnnotationStyle(updated.style) !== ANNOTATION_STYLE_UL);
+                            s.dataset.style = updated.style;
+                        });
+                    } catch (err) {
+                        console.warn(err);
+                        showToast(t('reader.annotation_update_failed'));
+                    } finally {
+                        hideAnnoMenu();
+                    }
+                    return;
+                }
+
+                if (action === 'edit-note') {
+                    hideAnnoMenu();
+                    openNoteModal({
+                        mode: 'edit',
+                        annoId: anno.id,
+                        context: { text: anno.text || '' },
+                        style: anno.style
+                    });
+                    return;
+                }
+
+                if (action === 'delete') {
+                    try {
+                        await apiDeleteAnnotation(anno.id);
+                        annotations = annotations.filter(a => a && a.id !== anno.id);
+                        const spans = Array.from(contentViewer.querySelectorAll(`span.anno[data-anno-id="${CSS.escape(anno.id)}"]`));
+                        spans.forEach(unwrapElement);
+                        renderNotesList();
+                    } catch (err) {
+                        console.warn(err);
+                        showToast(t('reader.annotation_delete_failed'));
+                    } finally {
+                        hideAnnoMenu();
+                    }
+                }
+            });
+        }
+
+        document.addEventListener('mousedown', (e) => {
+            if (selectionToolbar && selectionToolbar.classList.contains('show') && !selectionToolbar.contains(e.target)) {
+                if (!contentViewer.contains(e.target)) hideSelectionToolbar();
+            }
+
+            if (annoMenu && annoMenu.classList.contains('show')) {
+                if (annoMenu.contains(e.target)) return;
+                const onAnno = e.target.closest && e.target.closest('span.anno[data-anno-id]');
+                if (!onAnno) hideAnnoMenu();
+            }
+        });
+
 	    // --- Touch / Swipe Support ---
 	    let touchStartX = null;
 	    let touchStartY = null;
@@ -960,6 +1732,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Initial Load
     window.addEventListener('ui-language-changed', () => {
         updateFontChangeTitle();
+        renderNotesList();
     });
     applySettings();
     loadToc();
