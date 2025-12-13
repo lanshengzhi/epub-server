@@ -1,19 +1,17 @@
 # Project Context & Developer Guide
 
-This project provides a modern, web-based system for managing and reading unpacked EPUB ebooks. It features a central Library view, a feature-rich Modern Reader, and legacy support for standalone book viewing.
+This project provides a modern, web-based system for managing and reading unpacked EPUB ebooks. It features a central Library view and a feature-rich Modern Reader.
 
 ## Core Components
 
 ### 1. Web Interface
 -   **Library (`index.html`)**: The entry point. Lists configured books and links to the Modern Reader.
 -   **Modern Reader (`viewer.html` + `js/viewer.js`)**: A single-page application that dynamically loads book content (chapters) via fetch. It handles TOC parsing, theming (Dark/Sepia), font sizing, and navigation.
--   **Legacy Reader (`[Book]/index.html`)**: An older, self-contained reader residing in each book's directory. It is maintained for backward compatibility and direct folder access.
 
 ### 2. Scripts (`scripts/`)
 Python scripts are used to process the raw HTML files extracted from EPUBs.
 -   `process_ebook.py`: The main utility.
     -   **Sanitization**: Removes `<a>` tags from titles to prevent accidental clicks during reading.
-    -   **Navigation Injection**: Injects a script into every HTML chapter file. This script detects if the file is loaded directly (top-level) and redirects the user to the Legacy Reader frame (`[Book]/index.html`) with the correct chapter hash.
 -   `convert.sh`: specific shell script to install dependencies (`beautifulsoup4`, `lxml`) and run `process_ebook.py` on the current book collection.
 
 ## Directory Structure
@@ -30,7 +28,6 @@ Python scripts are used to process the raw HTML files extracted from EPUBs.
 │   ├── convert.sh        # Build/Process script
 │   └── process_ebook.py  # Content processing logic
 └── [Book_Directory]/     # Unpacked EPUB content
-    ├── index.html        # Legacy Reader entry point
     ├── OPS/              # OEBPS standard folder (content)
     └── ...
 ```

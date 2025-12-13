@@ -2,23 +2,9 @@ import os
 import sys
 from bs4 import BeautifulSoup
 
-def get_script_to_inject():
-    return """
-    if (window.top === window.self) { // Only run if not in an iframe
-        var path = window.location.pathname;
-        var opsIndex = path.indexOf('/OPS/');
-        if (opsIndex !== -1) {
-            var bookRootRelative = path.substring(0, opsIndex);
-            var chapterPath = path.substring(opsIndex + 1);
-            window.location.replace(bookRootRelative + '/index.html#' + chapterPath);
-        }
-    }
-"""
-
 def process_html_file(filepath):
     """
-    Reads an HTML file, cleans titles, injects the navigation script,
-    and saves the changes back to the original file.
+    Reads an HTML file, cleans titles, and saves the changes back to the original file.
     """
     try:
         with open(filepath, 'r', encoding='utf-8') as f:
@@ -38,23 +24,6 @@ def process_html_file(filepath):
                 modified = True
                 print(f"Fixed linked title in: {os.path.basename(filepath)}")
 
-
-        # --- Script injection logic from batch_inject.py ---
-        script_tag = soup.new_tag("script")
-        script_tag.string = get_script_to_inject()
-
-        head = soup.find('head')
-        if head:
-            # Avoid duplicate scripts
-            if "window.location.replace" not in str(head):
-                head.append(script_tag)
-                modified = True
-                print(f"Injected script in: {os.path.basename(filepath)}")
-            else:
-                print(f"Script already present in: {os.path.basename(filepath)}")
-        else:
-            print(f"Could not find <head> tag in: {os.path.basename(filepath)}")
-            return # Cannot inject script if no head tag
 
         # If any changes were made, write them back to the file
         if modified:

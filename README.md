@@ -11,20 +11,22 @@ A modern, web-based EPUB reader for unpacked ebooks.
     -   Font size and margin adjustment.
     -   Collapsible Table of Contents (TOC).
     -   Progress saving (remembers your last read page).
--   **Legacy/Standalone Reader**: Each book also retains a standalone `index.html` reader for individual access (supported by processing scripts).
 
 ## Getting Started
 
 1.  **Start the Server**:
     We now use a custom Python server to handle library management and imports.
     ```bash
+    # Create a virtual environment if you haven't already
+    python3 -m venv .venv
+
     # Activate virtual environment (if not already active)
     source .venv/bin/activate
-    
+
     # Run the server
     python3 server.py
     ```
-    *Note: This replaces the old `python3 -m http.server` command.*
+    If `python3 -m venv .venv` fails because `ensurepip` is unavailable (common on Debian/Ubuntu), install the system venv package (`sudo apt install python3-venv` or the matching version, e.g. `python3.12-venv`), then rerun the `venv` creation step.
 
 2.  **Open the Library**:
     Navigate to [http://localhost:8000](http://localhost:8000) in your web browser.
@@ -38,10 +40,9 @@ A modern, web-based EPUB reader for unpacked ebooks.
 -   `viewer.html`: The modern, universal reader application.
 -   `css/` & `js/`: Shared styles and logic.
 -   `scripts/`: Python utilities for maintaining ebook files.
-    -   `process_ebook.py`: Cleans HTML titles and injects redirects for the legacy reader.
+    -   `process_ebook.py`: Cleans HTML titles to remove stray hyperlinks.
     -   `convert.sh`: Helper script to run processing.
 -   `[BookFolder]/`: Unpacked EPUB directories.
-    -   Contains a legacy `index.html` reader.
 
 ## Adding New Books
 
@@ -55,7 +56,7 @@ A modern, web-based EPUB reader for unpacked ebooks.
         cover: "FolderName/path/to/cover.jpg"
     }
     ```
-3.  (Optional) Run `scripts/convert.sh` to clean up the HTML and enable the legacy reader for the new book.
+3.  (Optional) Run `scripts/convert.sh` to clean up the HTML if the source EPUB needs fixes.
 
 ## Scripts & content processing
 
@@ -63,7 +64,6 @@ The `scripts/` directory contains tools to manage the HTML content.
 
 -   **`process_ebook.py`**:
     1.  **Clean Titles**: Removes hyperlinks from `<p>` tags in titles (common in some converted EPUBs).
-    2.  **Inject Redirects**: Adds a Javascript snippet to chapter files. If you open a chapter HTML file directly (e.g., `Book/OPS/xhtml/001.html`), it redirects you to the book's standalone reader (`Book/index.html`).
 
 Usage:
 ```bash
