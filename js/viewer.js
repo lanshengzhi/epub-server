@@ -93,6 +93,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Config
     const BOOK_KEY = `progress_${bookDir}`;
     const THEME_KEY = 'theme';
+    const TOAST_DURATION_MS = 2000;
+
+    let toastTimer = null;
+    function showToast(message) {
+        const toast = document.getElementById('toast');
+        if (!toast) return;
+        toast.textContent = message;
+        toast.classList.add('show');
+        if (toastTimer) window.clearTimeout(toastTimer);
+        toastTimer = window.setTimeout(() => toast.classList.remove('show'), TOAST_DURATION_MS);
+    }
 
     function normalizeBookPath(path) {
         if (!path) return path;
@@ -483,14 +494,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         contentViewer.style.fontSize = `${currentFontSize}%`;
         contentViewer.style.maxWidth = `${currentMaxWidth}px`;
         document.body.classList.toggle('dark-mode', currentTheme === 'dark');
-        contentViewer.style.fontFamily = getFontStack(currentFontProfile);
+        contentViewer.style.setProperty('--reader-font', getFontStack(currentFontProfile));
     }
     
     function getFontStack(profile) {
         const stacks = {
-            'serif': '"Merriweather", "Georgia", serif',
-            'sans': '"Inter", "Helvetica", sans-serif',
-            'mono': '"Fira Code", "Courier New", monospace'
+            'serif': '"Merriweather", Georgia, "Times New Roman", Times, serif',
+            'sans': '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+            'mono': '"Fira Code", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace'
         };
         return stacks[profile] || stacks['serif'];
     }
@@ -534,6 +545,21 @@ document.addEventListener('DOMContentLoaded', async () => {
         localStorage.setItem('fontSize', currentFontSize);
         applySettings();
     };
+
+    const fontProfiles = ['serif', 'sans', 'mono'];
+    const fontChangeBtn = document.getElementById('font-change');
+    if (fontChangeBtn) {
+        fontChangeBtn.onclick = () => {
+            const currentIndex = fontProfiles.indexOf(currentFontProfile);
+            const nextIndex = currentIndex === -1 ? 0 : (currentIndex + 1) % fontProfiles.length;
+            currentFontProfile = fontProfiles[nextIndex];
+            localStorage.setItem('fontProfile', currentFontProfile);
+            fontChangeBtn.title = `Change Font (Current: ${currentFontProfile})`;
+            showToast(`Font: ${currentFontProfile}`);
+            applySettings();
+        };
+        fontChangeBtn.title = `Change Font (Current: ${currentFontProfile})`;
+    }
 
     // Initial Load
     applySettings();
