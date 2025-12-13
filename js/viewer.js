@@ -29,14 +29,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     const prevBtn = document.getElementById('prev-chapter');
     const nextBtn = document.getElementById('next-chapter');
     
-    // Config
-    const BOOK_KEY = `progress_${bookDir}`;
-    const THEME_KEY = 'theme';
-    const TOAST_DURATION_MS = 2000;
+	    // Config
+	    const BOOK_KEY = `progress_${bookDir}`;
+	    const THEME_KEY = 'theme';
+	    const TOAST_DURATION_MS = 2000;
+	    const PROGRESS_VERSION = 2;
+	    const READING_BLOCK_SELECTOR = 'p, li, blockquote, h1, h2, h3, h4, h5, h6, dt, dd';
+	    const AUTO_ANCHOR_PREFIX = '__epub_auto_';
 
-    let toastTimer = null;
-    function showToast(message) {
-        const toast = document.getElementById('toast');
+	    let toastTimer = null;
+	    function showToast(message) {
+	        const toast = document.getElementById('toast');
         if (!toast) return;
         toast.textContent = message;
         toast.classList.add('show');
@@ -44,9 +47,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         toastTimer = window.setTimeout(() => toast.classList.remove('show'), TOAST_DURATION_MS);
     }
 
-    function normalizeBookPath(path) {
-        if (!path) return path;
-        if (/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(path)) return path;
+	    function normalizeBookPath(path) {
+	        if (!path) return path;
+	        if (/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(path)) return path;
 
         const [pathPart, hashPart] = path.split('#');
         const absolute = pathPart.startsWith('/');
@@ -62,13 +65,79 @@ document.addEventListener('DOMContentLoaded', async () => {
             stack.push(part);
         }
 
-        const normalized = (absolute ? '/' : '') + stack.join('/');
-        return (normalized.startsWith('/') ? normalized.slice(1) : normalized) + (hashPart ? `#${hashPart}` : '');
-    }
+	        const normalized = (absolute ? '/' : '') + stack.join('/');
+	        return (normalized.startsWith('/') ? normalized.slice(1) : normalized) + (hashPart ? `#${hashPart}` : '');
+	    }
 
-    function resolveBookHref(baseDir, href) {
-        if (!href) return href;
-        if (/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(href)) return href;
+	    function readProgress() {
+	        let raw = null;
+	        try {
+	            raw = localStorage.getItem(BOOK_KEY);
+	        } catch {
+	            return null;
+	        }
+	        if (!raw) return null;
+	
+	        // Backward-compat: previously stored as plain href string.
+	        if (!raw.trim().startsWith('{')) {
+	            const normalized = normalizeBookPath(raw);
+	            const [filePath, anchor] = String(normalized).split('#');
+	            return {
+	                v: 1,
+	                href: filePath,
+	                anchor: anchor || null,
+	                percent: null
+	            };
+	        }
+	
+	        try {
+	            const parsed = JSON.parse(raw);
+	            if (!parsed || typeof parsed !== 'object') return null;
+	            if (!parsed.href || typeof parsed.href !== 'string') return null;
+	
+	            return {
+	                v: typeof parsed.v === 'number' ? parsed.v : PROGRESS_VERSION,
+	                href: normalizeBookPath(parsed.href).split('#')[0],
+	                anchor: typeof parsed.anchor === 'string' && parsed.anchor ? parsed.anchor : null,
+	                percent: typeof parsed.percent === 'number' && Number.isFinite(parsed.percent) ? parsed.percent : null
+	            };
+	        } catch {
+	            return null;
+	        }
+	    }
+	
+	    function writeProgress(patch) {
+	        if (!patch || !patch.href) return;
+	        const nextHref = normalizeBookPath(patch.href).split('#')[0];
+	        const existing = readProgress();
+	
+	        const next = {
+	            v: PROGRESS_VERSION,
+	            href: nextHref,
+	            anchor: null,
+	            percent: null
+	        };
+	
+	        if (existing && existing.href === nextHref) {
+	            next.anchor = existing.anchor;
+	            next.percent = existing.percent;
+	        } else {
+	            next.percent = 0;
+	        }
+	
+	        if (typeof patch.anchor === 'string') next.anchor = patch.anchor || null;
+	        if (typeof patch.percent === 'number' && Number.isFinite(patch.percent)) {
+	            next.percent = Math.max(0, Math.min(1, patch.percent));
+	        }
+	
+	        try {
+	            localStorage.setItem(BOOK_KEY, JSON.stringify(next));
+	        } catch {}
+	    }
+	
+	    function resolveBookHref(baseDir, href) {
+	        if (!href) return href;
+	        if (/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(href)) return href;
         if (href.startsWith('#')) return null;
         const [hrefPath, hashPart] = href.split('#');
         const joined = hrefPath.startsWith('/') ? hrefPath : `${baseDir}/${hrefPath}`;
@@ -85,24 +154,75 @@ document.addEventListener('DOMContentLoaded', async () => {
         loadChapter(target);
     });
     
-    // State
-    let spineItems = []; 
-    let currentSpineIndex = -1;
-    let bookMetadataLang = null;
-    let ncxPath = ''; 
-    let tocLoaded = false;
+	    // State
+	    let spineItems = []; 
+	    let currentSpineIndex = -1;
+	    let currentChapterHref = null;
+	    let bookMetadataLang = null;
+	    let ncxPath = ''; 
+	    let tocLoaded = false;
     
     // Settings State
     let currentFontSize = parseInt(localStorage.getItem('fontSize')) || 100;
     let currentTheme = localStorage.getItem('theme') || 'light';
     let currentMaxWidth = parseInt(localStorage.getItem('maxWidth')) || 800;
-    let currentFontProfile = localStorage.getItem('fontProfile') || 'serif';
-    let loadChapterRequestId = 0;
-    let transitionCleanupTimer = null;
+	    let currentFontProfile = localStorage.getItem('fontProfile') || 'serif';
+	    let loadChapterRequestId = 0;
+	    let transitionCleanupTimer = null;
+	    let progressSaveTimer = null;
+	    let isRestoringScrollPosition = false;
+	
+	    function ensureAutoAnchors(container) {
+	        const blocks = Array.from(container.querySelectorAll(READING_BLOCK_SELECTOR));
+	        blocks.forEach((el, idx) => {
+	            if (el.id) return;
+	            el.id = `${AUTO_ANCHOR_PREFIX}${idx}`;
+	        });
+	    }
+	
+	    function getReadingAnchorId() {
+	        if (!scrollWrapper || !contentViewer) return null;
+	        const rect = scrollWrapper.getBoundingClientRect();
+	        const x = rect.left + rect.width / 2;
+	        const y = rect.top + Math.min(80, Math.max(10, rect.height / 5));
+	        const hit = document.elementFromPoint(x, y);
+	        if (!hit || !contentViewer.contains(hit)) return null;
+	
+	        const block = typeof hit.closest === 'function' ? hit.closest(READING_BLOCK_SELECTOR) : null;
+	        if (block && contentViewer.contains(block) && block.id) return block.id;
+	
+	        const withId = typeof hit.closest === 'function' ? hit.closest('[id]') : null;
+	        if (withId && contentViewer.contains(withId) && withId.id) return withId.id;
+	        return null;
+	    }
+	
+	    function getScrollPercent() {
+	        const max = scrollWrapper.scrollHeight - scrollWrapper.clientHeight;
+	        if (max <= 0) return 0;
+	        return Math.max(0, Math.min(1, scrollWrapper.scrollTop / max));
+	    }
+	
+	    function saveReadingProgress() {
+	        if (!currentChapterHref) return;
+	        const patch = { href: currentChapterHref, percent: getScrollPercent() };
+	        const anchorId = getReadingAnchorId();
+	        if (anchorId) patch.anchor = anchorId;
+	        writeProgress(patch);
+	    }
+	
+	    function scheduleProgressSave(immediate = false) {
+	        if (isRestoringScrollPosition) return;
+	        if (progressSaveTimer) window.clearTimeout(progressSaveTimer);
+	        if (immediate) {
+	            saveReadingProgress();
+	            return;
+	        }
+	        progressSaveTimer = window.setTimeout(saveReadingProgress, 250);
+	    }
 
-    function updateFontChangeTitle() {
-        const fontChangeBtn = document.getElementById('font-change');
-        if (!fontChangeBtn) return;
+	    function updateFontChangeTitle() {
+	        const fontChangeBtn = document.getElementById('font-change');
+	        if (!fontChangeBtn) return;
         fontChangeBtn.title = t('reader.change_font_current', { profile: currentFontProfile });
     }
 
@@ -169,15 +289,18 @@ document.addEventListener('DOMContentLoaded', async () => {
                 tocLoaded = await loadNcx(ncxPath);
             }
 
-            // Restore Progress
-            const savedProgressRaw = localStorage.getItem(BOOK_KEY);
-            const savedProgress = savedProgressRaw ? normalizeBookPath(savedProgressRaw) : null;
-            if (savedProgress) {
-                const exists = spineItems.some(i => savedProgress.startsWith(i.href));
-                loadChapter(exists ? savedProgress : spineItems[0].href);
-            } else {
-                loadChapter(spineItems[0].href);
-            }
+	            // Restore Progress
+	            const savedProgress = readProgress();
+	            const savedLocation = savedProgress
+	                ? normalizeBookPath(savedProgress.anchor ? `${savedProgress.href}#${savedProgress.anchor}` : savedProgress.href)
+	                : null;
+	            if (savedLocation) {
+	                const filePath = savedLocation.split('#')[0];
+	                const exists = spineItems.some(i => i.href === filePath);
+	                loadChapter(exists ? savedLocation : spineItems[0].href, null, { restore: true, progress: savedProgress });
+	            } else {
+	                loadChapter(spineItems[0].href);
+	            }
 
         } catch (e) {
             console.error(e);
@@ -278,18 +401,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    async function loadChapter(href, direction = null) {
-        if (!href) return;
-        const requestId = ++loadChapterRequestId;
-        const [filePath, anchor] = href.split('#');
-        const normalizedFilePath = normalizeBookPath(filePath);
-        const normalizedHref = anchor ? `${normalizedFilePath}#${anchor}` : normalizedFilePath;
+	    async function loadChapter(href, direction = null, options = null) {
+	        if (!href) return;
+	        const requestId = ++loadChapterRequestId;
+	        const [filePath, anchor] = href.split('#');
+	        const normalizedFilePath = normalizeBookPath(filePath);
+	        const normalizedHref = anchor ? `${normalizedFilePath}#${anchor}` : normalizedFilePath;
+	        const restoreProgress = options && options.restore ? (options.progress || readProgress()) : null;
 
-        localStorage.setItem(BOOK_KEY, normalizedHref);
-        currentSpineIndex = spineItems.findIndex(i => i.href === normalizedFilePath);
-        
-        // Update Active TOC
-        document.querySelectorAll('.toc-content a').forEach(a => a.classList.remove('active'));
+	        currentSpineIndex = spineItems.findIndex(i => i.href === normalizedFilePath);
+	        currentChapterHref = normalizedFilePath;
+	        
+	        // Update Active TOC
+	        document.querySelectorAll('.toc-content a').forEach(a => a.classList.remove('active'));
         const activeLink =
             document.querySelector(`.toc-content a[data-src="${normalizedHref}"]`) ||
             document.querySelector(`.toc-content a[data-src="${normalizedFilePath}"]`) ||
@@ -330,10 +454,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (requestId !== loadChapterRequestId) return;
             
             const docLang = doc.documentElement.getAttribute('lang') || bookMetadataLang;
-            if (docLang) contentViewer.setAttribute('lang', docLang);
+	            if (docLang) contentViewer.setAttribute('lang', docLang);
 
-            // Swap Content
-            contentViewer.innerHTML = doc.body.innerHTML;
+	            // Swap Content
+	            contentViewer.innerHTML = doc.body.innerHTML;
+	            ensureAutoAnchors(contentViewer);
             
             // Animation: Cleanup Exit & Start Enter Phase
             if (direction) {
@@ -373,33 +498,71 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             };
 
-            const jumpToChapterStart = () => {
-                withInstantScroll(() => {
-                    if (typeof scrollWrapper.scrollTo === 'function') scrollWrapper.scrollTo(0, 0);
-                    else scrollWrapper.scrollTop = 0;
-                });
-            };
+	            const jumpToChapterStart = () => {
+	                withInstantScroll(() => {
+	                    if (typeof scrollWrapper.scrollTo === 'function') scrollWrapper.scrollTo(0, 0);
+	                    else scrollWrapper.scrollTop = 0;
+	                });
+	            };
+	
+	            const jumpToPercent = (percent) => {
+	                const clamped = Math.max(0, Math.min(1, percent));
+	                withInstantScroll(() => {
+	                    const max = scrollWrapper.scrollHeight - scrollWrapper.clientHeight;
+	                    const target = max > 0 ? clamped * max : 0;
+	                    if (typeof scrollWrapper.scrollTo === 'function') scrollWrapper.scrollTo(0, target);
+	                    else scrollWrapper.scrollTop = target;
+	                });
+	            };
+	
+	            const restoreScroll = (fn) => {
+	                isRestoringScrollPosition = true;
+	                try {
+	                    fn();
+	                } finally {
+	                    requestAnimationFrame(() => {
+	                        requestAnimationFrame(() => {
+	                            isRestoringScrollPosition = false;
+	                            scheduleProgressSave(true);
+	                        });
+	                    });
+	                }
+	            };
 
-            if (anchor) {
-                setTimeout(() => {
-                    const targetEl = document.getElementById(anchor);
-                    if (targetEl) {
-                        withInstantScroll(() => {
-                            try {
-                                targetEl.scrollIntoView({ block: 'start' });
-                            } catch {
-                                targetEl.scrollIntoView();
-                            }
-                        });
-                    } else {
-                        jumpToChapterStart();
-                    }
-                }, 0);
-            } else {
-                jumpToChapterStart();
-            }
-        } catch (e) {
-            if (requestId !== loadChapterRequestId) return;
+	            if (anchor) {
+	                setTimeout(() => {
+	                    const targetEl = document.getElementById(anchor);
+	                    if (targetEl) {
+	                        restoreScroll(() => {
+	                            withInstantScroll(() => {
+	                                try {
+	                                    targetEl.scrollIntoView({ block: 'start' });
+	                                } catch {
+	                                    targetEl.scrollIntoView();
+	                                }
+	                            });
+	                        });
+	                    } else {
+	                        const canRestorePercent =
+	                            restoreProgress &&
+	                            restoreProgress.href === normalizedFilePath &&
+	                            typeof restoreProgress.percent === 'number' &&
+	                            Number.isFinite(restoreProgress.percent);
+	                        if (canRestorePercent) restoreScroll(() => jumpToPercent(restoreProgress.percent));
+	                        else restoreScroll(jumpToChapterStart);
+	                    }
+	                }, 0);
+	            } else {
+	                const canRestorePercent =
+	                    restoreProgress &&
+	                    restoreProgress.href === normalizedFilePath &&
+	                    typeof restoreProgress.percent === 'number' &&
+	                    Number.isFinite(restoreProgress.percent);
+	                if (canRestorePercent) restoreScroll(() => jumpToPercent(restoreProgress.percent));
+	                else restoreScroll(jumpToChapterStart);
+	            }
+	        } catch (e) {
+	            if (requestId !== loadChapterRequestId) return;
             console.error(e);
             contentViewer.innerHTML = `<div style="padding:20px; color:red">${t('reader.error_generic', { message: e.message })}</div>`;
             if (direction) contentViewer.classList.remove('slide-out-left', 'slide-out-right');
@@ -680,9 +843,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         updateFontChangeTitle();
     }
 
-    // --- Touch / Swipe Support ---
-    let touchStartX = null;
-    let touchStartY = null;
+	    // --- Touch / Swipe Support ---
+	    let touchStartX = null;
+	    let touchStartY = null;
 
     function hasActiveTextSelectionInContent() {
         const sel = typeof window.getSelection === 'function' ? window.getSelection() : null;
@@ -732,10 +895,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         touchStartX = null; 
     }, { passive: true });
 
-    scrollWrapper.addEventListener('touchcancel', () => {
-        touchStartX = null;
-        touchStartY = null;
-    }, { passive: true });
+	    scrollWrapper.addEventListener('touchcancel', () => {
+	        touchStartX = null;
+	        touchStartY = null;
+	    }, { passive: true });
+	
+	    // Persist reading position within long chapters
+	    scrollWrapper.addEventListener('scroll', () => scheduleProgressSave(false), { passive: true });
+	    document.addEventListener('visibilitychange', () => {
+	        if (document.visibilityState === 'hidden') scheduleProgressSave(true);
+	    });
+	    window.addEventListener('beforeunload', () => scheduleProgressSave(true));
 
     function handleSwipe(startX, startY, endX, endY) {
         const diffX = endX - startX;
