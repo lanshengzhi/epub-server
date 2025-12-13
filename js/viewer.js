@@ -1,73 +1,6 @@
 document.addEventListener('DOMContentLoaded', async () => {
-    console.log("Viewer DOMContentLoaded. Checking DBManager:", window.DBManager);
-    
-    // Initialize DB Manager if available (PWA/Extension mode)
-    const dbManager = window.DBManager ? new DBManager() : null;
-    if (dbManager) {
-        try {
-            await dbManager.open();
-            console.log('DB Manager initialized in Viewer');
-        } catch (e) {
-            console.warn('DB Manager failed to open:', e);
-        }
-    }
-
-    // --- Helper: Fetch Asset (Server vs DB) ---
+    // --- Helper: Fetch Asset (Server) ---
     async function fetchAsset(url) {
-        // 1. Try DB first if available and URL looks like a book path
-        if (dbManager) {
-            let cleanPath = url;
-            
-            // Remove Origin
-            if (cleanPath.startsWith(window.location.origin)) {
-                cleanPath = cleanPath.substring(window.location.origin.length);
-            }
-            
-            // Repeatedly remove leading slashes to be safe
-            while (cleanPath.startsWith('/')) {
-                cleanPath = cleanPath.substring(1);
-            }
-
-            // Remove "pwa/" prefix if present (common in extension structure)
-            if (cleanPath.startsWith('pwa/')) {
-                cleanPath = cleanPath.substring(4);
-            }
-            
-            // Remove "books/" prefix if present
-            if (cleanPath.startsWith('books/')) {
-                 cleanPath = cleanPath.substring(6); 
-            }
-            
-            cleanPath = decodeURIComponent(cleanPath);
-            
-            console.log(`[FetchAsset] Looking up DB Key: "${cleanPath}" (Original: "${url}")`);
-
-            try {
-                 const fileRecord = await dbManager.getFile(cleanPath);
-                 if (fileRecord) {
-                     const blob = fileRecord.content instanceof Blob 
-                                  ? fileRecord.content 
-                                  : new Blob([fileRecord.content], { type: fileRecord.mimeType || 'text/plain' });
-                     
-                     return new Response(blob, { status: 200, statusText: 'OK (DB)' });
-                 } else {
-                     console.warn(`[FetchAsset] Not Found in DB: "${cleanPath}"`);
-                     // DEBUG: Dump first few keys to see what's wrong
-                     try {
-                         const tx = dbManager.db.transaction(['books_files'], 'readonly');
-                         const store = tx.objectStore('books_files');
-                         const req = store.getAllKeys(null, 5);
-                         req.onsuccess = () => {
-                             console.log("DEBUG: Sample keys in DB:", req.result);
-                         };
-                     } catch(e) { console.error("DEBUG Error", e); }
-                 }
-            } catch (e) {
-                 console.warn(`[FetchAsset] DB Error for ${cleanPath}:`, e);
-            }
-        }
-
-        // 2. Fallback to Network
         return fetch(url);
     }
 
@@ -76,8 +9,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     if (!bookDir) {
         alert('No book specified.');
-        // In extension, closing tab might be better, or redirect
-        if (!chrome.runtime?.id) window.location.href = 'index.html';
+        window.location.href = 'index.html';
         return;
     }
 
@@ -397,22 +329,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         for (const img of images) {
             const src = img.getAttribute('src');
             if (src && !src.startsWith('http') && !src.startsWith('/') && !src.startsWith('data:')) {
-                const fullPath = `${baseDir}/${src}`;
-                if (dbManager) {
-                     let dbPath = fullPath;
-                     if (dbPath.startsWith('books/')) dbPath = decodeURIComponent(dbPath);
-                     try {
-                         const fileRecord = await dbManager.getFile(dbPath);
-                         if (fileRecord) {
-                             const blob = fileRecord.content instanceof Blob ? fileRecord.content : new Blob([fileRecord.content]);
-                             img.setAttribute('src', URL.createObjectURL(blob));
-                         } else {
-                             img.setAttribute('src', fullPath);
-                         }
-                     } catch(e) { img.setAttribute('src', fullPath); }
-                } else {
-                    img.setAttribute('src', fullPath);
-                }
+                const fullPath = resolveBookHref(baseDir, src) || `${baseDir}/${src}`;
+                img.setAttribute('src', fullPath);
             }
             img.setAttribute('loading', 'lazy');
         }
@@ -434,49 +352,18 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const fullPath = resolveBookHref(baseDir, hrefAttr);
                 if (!fullPath) continue;
 
-                if (dbManager) {
-                    let dbPath = fullPath;
-                    if (dbPath.startsWith('books/')) dbPath = decodeURIComponent(dbPath);
-                    try {
-                        const fileRecord = await dbManager.getFile(dbPath);
-                        if (fileRecord) {
-                            const blob =
-                                fileRecord.content instanceof Blob
-                                    ? fileRecord.content
-                                    : new Blob([fileRecord.content]);
-                            const objectUrl = URL.createObjectURL(blob);
-                            svgImage.setAttribute('href', objectUrl);
-                            svgImage.setAttribute('xlink:href', objectUrl);
-                            svgImage.setAttributeNS('http://www.w3.org/1999/xlink', 'href', objectUrl);
-                            continue;
-                        }
-                    } catch (e) {}
-                }
-
                 svgImage.setAttribute('href', fullPath);
                 svgImage.setAttribute('xlink:href', fullPath);
                 svgImage.setAttributeNS('http://www.w3.org/1999/xlink', 'href', fullPath);
             }
         }
 
-        doc.querySelectorAll('link[rel="stylesheet"]').forEach(async link => {
+        doc.querySelectorAll('link[rel="stylesheet"]').forEach(link => {
             const href = link.getAttribute('href');
-            if (href && !href.startsWith('http')) {
-                const fullPath = `${baseDir}/${href}`;
-                if (dbManager) {
-                    try {
-                        const fileRecord = await dbManager.getFile(fullPath);
-                         if (fileRecord) {
-                             const text = await (new Response(fileRecord.content).text());
-                             const style = document.createElement('style');
-                             style.textContent = text;
-                             link.parentNode.replaceChild(style, link);
-                         }
-                    } catch(e) {}
-                } else {
-                    link.setAttribute('href', fullPath);
-                }
-            }
+            if (!href || href.startsWith('http') || href.startsWith('data:')) return;
+            if (href.startsWith('/')) return;
+            const fullPath = resolveBookHref(baseDir, href) || `${baseDir}/${href}`;
+            link.setAttribute('href', fullPath);
         });
     }
 

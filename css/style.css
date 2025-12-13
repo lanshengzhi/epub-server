@@ -748,7 +748,7 @@ a { text-decoration: none; color: inherit; }
     height: 300px;
 }
 
-/* Toast (Reader/PWA) */
+/* Toast (Reader) */
 #toast {
     visibility: hidden;
     min-width: 250px;

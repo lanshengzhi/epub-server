@@ -1,6 +1,6 @@
 # Gemini Reader
 
-A modern, web-based EPUB reader for unpacked ebooks.
+A modern, web-based EPUB reader with a lightweight Python server backend.
 
 ## Features
 
@@ -41,25 +41,18 @@ A modern, web-based EPUB reader for unpacked ebooks.
 
 -   `index.html`: The main Library entry point.
 -   `viewer.html`: The modern, universal reader application.
+-   `server.py`: Flask server (API + static + book file serving).
 -   `css/` & `js/`: Shared styles and logic.
+-   `library/`: Imported & unpacked EPUB book directories (managed by the server).
+-   `temp_uploads/`: Temporary upload workspace.
+-   `user_metadata.json`: Per-book user metadata (e.g. categories).
 -   `scripts/`: Python utilities for maintaining ebook files.
     -   `process_ebook.py`: Cleans HTML titles to remove stray hyperlinks.
     -   `convert.sh`: Helper script to run processing.
--   `[BookFolder]/`: Unpacked EPUB directories.
 
 ## Adding New Books
 
-1.  Unpack your EPUB into a new folder in this directory.
-2.  Open `js/library.js` and add a new entry to the `books` array:
-    ```javascript
-    {
-        title: "Book Title",
-        author: "Author Name",
-        dir: "FolderName",
-        cover: "FolderName/path/to/cover.jpg"
-    }
-    ```
-3.  (Optional) Run `scripts/convert.sh` to clean up the HTML if the source EPUB needs fixes.
+Use the **Import** button in the web UI. The server will upload, unzip, process, and add the book under `library/`.
 
 ## Scripts & content processing
 
