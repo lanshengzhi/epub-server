@@ -1,0 +1,967 @@
+:root {
+    --primary-color: #3b82f6;
+    --bg-color: #f3f4f6;
+    --card-bg: #ffffff;
+    --text-color: #1f2937;
+    --text-muted: #6b7280;
+    --border-color: #e5e7eb;
+    --header-bg: #ffffff;
+    --header-height: 60px;
+    --sidebar-width: 300px;
+    --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    --transition: 0.3s ease;
+    
+    /* Code Block Colors (Default Light) */
+    --code-bg: #282c34; /* Atom One Dark bg */
+    --code-text: #abb2bf;
+    --code-font: "Fira Code", "Consolas", "Monaco", "Courier New", monospace;
+    --line-num-color: #5c6370;
+}
+
+body.dark-mode {
+    --bg-color: #111827;
+    --card-bg: #1f2937;
+    --text-color: #f9fafb;
+    --text-muted: #9ca3af;
+    --border-color: #374151;
+    --header-bg: #1f2937;
+}
+
+body.sepia-mode {
+    --bg-color: #fbf0d9;
+    --card-bg: #fdf6e3;
+    --text-color: #5b4636;
+    --text-muted: #8b715e;
+    --border-color: #eadaa2;
+    --header-bg: #fdf6e3;
+}
+
+/* Reset & Base */
+* { box-sizing: border-box; }
+body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    transition: background-color var(--transition), color var(--transition);
+}
+
+button {
+    cursor: pointer;
+    border: none;
+    background: none;
+    color: inherit;
+    font-size: 1rem;
+}
+
+a { text-decoration: none; color: inherit; }
+
+/* Utilities */
+.icon-btn {
+    padding: 8px;
+    border-radius: 50%;
+    transition: background-color 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+}
+.icon-btn:hover {
+    background-color: rgba(128, 128, 128, 0.1);
+}
+
+/* Header */
+.app-header, .reader-header {
+    height: var(--header-height);
+    background-color: var(--header-bg);
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    box-shadow: var(--shadow);
+    position: sticky;
+    top: 0;
+    z-index: 50;
+}
+
+.header-left, .header-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.book-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 0 0 0 10px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 300px;
+}
+
+/* Library Grid */
+.library-container {
+    padding: 40px 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    gap: 30px;
+    align-items: flex-start;
+}
+
+.library-sidebar {
+    width: 250px;
+    flex-shrink: 0;
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: var(--shadow);
+    position: sticky;
+    top: calc(var(--header-height) + 20px);
+}
+
+.sidebar-header h3 {
+    margin: 0 0 15px 0;
+    font-size: 1.1rem;
+    color: var(--text-color);
+}
+
+#category-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+#category-list li {
+    padding: 10px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.2s;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: var(--text-color);
+    font-size: 0.95rem;
+    margin-bottom: 4px;
+}
+
+#category-list li:hover {
+    background-color: rgba(0,0,0,0.05);
+}
+
+#category-list li.active {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+#category-list li .count {
+    background: rgba(0,0,0,0.1);
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 0.8rem;
+}
+
+#category-list li.active .count {
+    background: rgba(255,255,255,0.2);
+    color: white;
+}
+
+.library-content {
+    flex-grow: 1;
+    min-width: 0;
+}
+
+@media (max-width: 768px) {
+    .library-container {
+        flex-direction: column;
+    }
+    
+    .library-sidebar {
+        width: 100%;
+        position: static;
+        margin-bottom: 20px;
+    }
+    
+    #category-list {
+        display: flex;
+        overflow-x: auto;
+        gap: 10px;
+        padding-bottom: 5px;
+    }
+    
+    #category-list li {
+        white-space: nowrap;
+        margin-bottom: 0;
+    }
+}
+
+.library-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 30px;
+}
+
+/* Library Controls */
+.library-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding: 10px 15px;
+    background-color: var(--card-bg);
+    border-radius: 8px;
+    box-shadow: var(--shadow);
+}
+
+.sort-controls, .view-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.sort-controls label {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+}
+
+.sort-controls select {
+    padding: 6px 10px;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    font-size: 0.9rem;
+    cursor: pointer;
+}
+
+.view-controls .icon-btn {
+    border: 1px solid transparent;
+}
+
+.view-controls .icon-btn.active {
+    background-color: var(--primary-color);
+    color: white;
+    box-shadow: var(--shadow);
+}
+
+/* List View */
+.library-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.library-list .book-card {
+    flex-direction: row;
+    height: 100px;
+    align-items: center;
+}
+
+.library-list .book-cover {
+    height: 100%;
+    width: 80px;
+    flex-shrink: 0;
+}
+
+.library-list .book-info {
+    justify-content: center;
+    padding: 0 20px;
+}
+
+.library-list .book-info h3 {
+    font-size: 1.1rem;
+    margin-bottom: 4px;
+}
+
+.library-list .delete-btn {
+    top: 50%;
+    transform: translateY(-50%);
+    right: 15px;
+}
+
+.book-card {
+    background-color: var(--card-bg);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: var(--shadow);
+    transition: transform 0.2s, box-shadow 0.2s;
+    display: flex;
+    flex-direction: column;
+}
+
+.book-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+.book-cover {
+    height: 280px;
+    background-color: #ccc;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.book-cover img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.book-cover .placeholder {
+    font-size: 3rem;
+    color: #fff;
+}
+
+.book-info {
+    padding: 15px;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.book-info h3 {
+    margin: 0 0 5px;
+    font-size: 1.1rem;
+    color: var(--text-color);
+}
+
+.book-info p {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+/* Reader Layout */
+.reader-page {
+    height: 100vh;
+    display: flex;
+    flex-direction: column; /* Main page is column: Header + Body */
+    overflow: hidden;
+}
+
+.reader-container {
+    display: flex;
+    flex-direction: row;
+    flex-grow: 1;
+    overflow: hidden;
+    position: relative;
+    height: calc(100vh - var(--header-height));
+}
+
+.sidebar {
+    width: var(--sidebar-width);
+    height: 100%;
+    background-color: var(--card-bg);
+    border-right: 1px solid var(--border-color);
+    
+    /* Desktop: Push Logic */
+    /* We use margin-left to hide it off-screen to the left while keeping it in the flow (sort of) */
+    /* Actually, for smoother flex transition, we can toggle margin-left */
+    margin-left: calc(var(--sidebar-width) * -1); 
+    transition: margin-left var(--transition);
+    
+    flex-shrink: 0;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    position: relative; /* Default relative for desktop docking */
+}
+
+.sidebar.open {
+    margin-left: 0;
+}
+
+.main-content {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    height: 100%;
+    overflow: hidden;
+    min-width: 0; /* Critical for flex containers */
+}
+
+/* Mobile Overlay Override */
+@media (max-width: 768px) {
+    .sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        margin-left: 0; /* Reset desktop push logic */
+        transform: translateX(-100%);
+        transition: transform var(--transition);
+        box-shadow: 2px 0 10px rgba(0,0,0,0.2);
+    }
+
+    .sidebar.open {
+        margin-left: 0;
+        transform: translateX(0);
+    }
+}
+
+.sidebar-header {
+    height: var(--header-height);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 15px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.toc-content {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding: 15px;
+}
+
+.toc-content ul {
+    list-style: none;
+    padding-left: 0;
+    margin: 0;
+}
+
+.toc-content li {
+    margin-bottom: 5px;
+}
+
+.toc-content li ul {
+    padding-left: 20px;
+    margin-top: 5px;
+}
+
+.toc-content a {
+    display: block;
+    padding: 8px 10px;
+    border-radius: 6px;
+    font-size: 0.95rem;
+    color: var(--text-color);
+    transition: background 0.2s;
+}
+
+.toc-content a:hover {
+    background-color: rgba(0,0,0,0.05);
+}
+
+.toc-content a.active {
+    background-color: rgba(59, 130, 246, 0.1);
+    color: var(--primary-color);
+    font-weight: 500;
+}
+
+/* Reader Controls */
+.reader-controls {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    display: flex;
+    gap: 10px;
+    z-index: 10;
+}
+
+.nav-btn {
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    padding: 10px 15px;
+    border-radius: 8px;
+    box-shadow: var(--shadow);
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s;
+}
+
+.nav-btn:hover:not(:disabled) {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+.nav-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+    .header-right { gap: 5px; }
+    .book-title { max-width: 150px; }
+    .reader-controls {
+        width: 100%;
+        left: 0;
+        bottom: 0;
+        padding: 10px;
+        justify-content: space-between;
+        background: var(--card-bg);
+        border-top: 1px solid var(--border-color);
+    }
+}
+
+.iframe-container {
+    flex-grow: 1;
+    position: relative;
+    width: 100%;
+    height: 100%; /* Important: constrain height to parent flex item */
+    overflow-y: auto; /* Enable vertical scroll */
+    background-color: var(--bg-color); 
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+    
+    /* Flexbox for centering content-viewer */
+    display: flex;
+    justify-content: center; /* Center horizontally */
+    padding: 20px 0; /* Add vertical padding for top/bottom if content is short */
+}
+
+#content-viewer {
+    max-width: 800px; /* Default from JS. Keep this for content width control */
+    /* Remove margin: 0 auto; as flexbox will handle centering */
+    padding: 0 20px; /* Padding for content inside its max-width container */
+    line-height: 1.8;
+    font-size: 100%; /* controlled by JS */
+    flex-shrink: 0; /* Don't let it shrink below its intrinsic content size if min-width applied */
+}
+
+/* Content Images Optimization */
+#content-viewer img, 
+#content-viewer svg, 
+#content-viewer image {
+    max-width: 100% !important;
+    height: auto !important;
+    display: block;
+    margin: 1em auto;
+    cursor: zoom-in; /* Indicate clickable */
+    transition: opacity 0.5s ease, filter 0.5s ease;
+    filter: blur(0);
+    opacity: 1;
+}
+
+#content-viewer img.img-loading {
+    opacity: 0.5;
+    filter: blur(5px);
+}
+
+#content-viewer img:hover {
+    opacity: 0.9;
+}
+
+/* Code Block Optimization */
+#content-viewer pre {
+    background-color: var(--code-bg);
+    color: var(--code-text);
+    padding: 15px 15px 15px 50px; /* Left padding for line numbers */
+    border-radius: 8px;
+    overflow-x: auto;
+    margin: 1.5em 0;
+    font-family: var(--code-font);
+    font-size: 0.9em;
+    line-height: 1.5;
+    box-shadow: inset 0 0 10px rgba(0,0,0,0.2);
+    position: relative; /* For buttons */
+    /* Custom Scrollbar for Pre */
+    scrollbar-width: thin;
+    scrollbar-color: #4b5563 var(--code-bg);
+}
+
+#content-viewer pre.code-wrap {
+    white-space: pre-wrap;
+    word-break: break-all;
+    padding-left: 15px; /* Reset left padding when wrapped */
+}
+
+#content-viewer pre::-webkit-scrollbar {
+    height: 8px;
+}
+#content-viewer pre::-webkit-scrollbar-track {
+    background: var(--code-bg);
+    border-bottom-right-radius: 8px;
+    border-bottom-left-radius: 8px;
+}
+#content-viewer pre::-webkit-scrollbar-thumb {
+    background-color: #4b5563;
+    border-radius: 4px;
+}
+
+#content-viewer code {
+    font-family: var(--code-font);
+    background-color: rgba(128, 128, 128, 0.15); /* Subtle bg for inline code */
+    padding: 2px 5px;
+    border-radius: 4px;
+}
+
+#content-viewer pre code {
+    background-color: transparent; /* Remove inline style for block code */
+    padding: 0;
+    color: inherit;
+    border-radius: 0;
+}
+
+/* Line Numbers */
+.line-numbers-rows {
+    position: absolute;
+    top: 15px; /* Match pre padding-top */
+    left: 0;
+    width: 40px;
+    text-align: right;
+    padding-right: 10px;
+    color: var(--line-num-color);
+    border-right: 1px solid rgba(255,255,255,0.1);
+    user-select: none;
+    pointer-events: none;
+    line-height: 1.5; /* Match pre line-height */
+    /* Hide when wrapped */
+    display: block;
+}
+
+#content-viewer pre.code-wrap .line-numbers-rows {
+    display: none;
+}
+
+/* Code Toolbar */
+.code-toolbar {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    display: flex;
+    gap: 5px;
+    opacity: 0;
+    transition: opacity 0.2s;
+    z-index: 10;
+}
+
+#content-viewer pre:hover .code-toolbar {
+    opacity: 1;
+}
+
+.code-btn {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #abb2bf;
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.code-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+}
+
+/* Lightbox */
+.lightbox {
+    display: none;
+    position: fixed;
+    z-index: 2000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.9);
+    justify-content: center;
+    align-items: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.lightbox.show {
+    display: flex;
+    opacity: 1;
+}
+
+.lightbox-content {
+    max-width: 90%;
+    max-height: 90vh;
+    object-fit: contain;
+    border-radius: 4px;
+    box-shadow: 0 0 20px rgba(0,0,0,0.5);
+}
+
+.lightbox-close {
+    position: absolute;
+    top: 20px;
+    right: 30px;
+    color: #f1f1f1;
+    font-size: 40px;
+    font-weight: bold;
+    cursor: pointer;
+    z-index: 2001;
+    transition: 0.2s;
+}
+
+.lightbox-close:hover {
+    color: #bbb;
+}
+
+/* Modal */
+.modal {
+    display: none; 
+    position: fixed; 
+    z-index: 1000; 
+    left: 0;
+    top: 0;
+    width: 100%; 
+    height: 100%; 
+    overflow: auto; 
+    background-color: rgba(0,0,0,0.5); 
+    align-items: center;
+    justify-content: center;
+}
+.modal.show {
+    display: flex;
+}
+.modal-content {
+    background-color: var(--card-bg);
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    width: 80%;
+    max-width: 600px;
+    display: flex;
+    flex-direction: column;
+    max-height: 80vh;
+}
+.logs-container {
+    background: #111;
+    color: #0f0;
+    font-family: monospace;
+    padding: 10px;
+    border-radius: 4px;
+    margin-top: 10px;
+    overflow-y: auto;
+    flex-grow: 1;
+    white-space: pre-wrap;
+    font-size: 0.9rem;
+    height: 300px;
+}
+
+/* Delete Button for Book Card */
+.book-card {
+    position: relative; /* Needed for absolute positioning of delete-btn */
+}
+
+.delete-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background-color: rgba(255, 0, 0, 0.7); /* Red with some transparency */
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    cursor: pointer;
+    opacity: 0; /* Hidden by default */
+    transition: opacity 0.2s, background-color 0.2s;
+    z-index: 10; /* Ensure it's above other elements */
+}
+
+.book-card:hover .delete-btn {
+    opacity: 1; /* Show on hover */
+}
+
+.delete-btn:hover {
+    background-color: rgba(255, 0, 0, 0.9);
+}
+
+/* --- Ruby (Furigana) Support --- */
+ruby {
+    display: ruby;
+    vertical-align: baseline;
+}
+
+/* Tag Editor */
+.tag-input-container {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.tag-input-container input {
+    flex-grow: 1;
+    padding: 8px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background: var(--bg-color);
+    color: var(--text-color);
+}
+
+.tags-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    min-height: 50px;
+    padding: 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background: var(--bg-color);
+}
+
+.tag-pill {
+    background-color: var(--primary-color);
+    color: white;
+    padding: 4px 10px;
+    border-radius: 15px;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.tag-pill .remove-tag,
+.tag-pill .remove-import-tag {
+    cursor: pointer;
+    font-size: 0.8rem;
+    opacity: 0.8;
+}
+
+.tag-pill .remove-tag:hover,
+.tag-pill .remove-import-tag:hover {
+    opacity: 1;
+}
+
+.edit-tags-btn {
+    position: absolute;
+    top: 10px;
+    right: 50px; /* Left of delete button */
+    background-color: rgba(0, 0, 0, 0.5);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.2s, background-color 0.2s;
+    z-index: 10;
+}
+
+.book-card:hover .edit-tags-btn {
+    opacity: 1;
+}
+
+.edit-tags-btn:hover {
+    background-color: rgba(0, 0, 0, 0.8);
+}
+
+.library-list .edit-tags-btn {
+
+    top: 50%;
+
+    transform: translateY(-50%);
+
+    right: 60px;
+
+}
+
+
+
+/* Modal Footer & Buttons */
+
+.modal-footer {
+
+    margin-top: 25px;
+
+    display: flex;
+
+    justify-content: flex-end;
+
+    gap: 10px;
+
+}
+
+
+
+.nav-btn {
+
+    border: 1px solid var(--border-color);
+
+    padding: 8px 16px;
+
+    border-radius: 6px;
+
+    background: var(--card-bg);
+
+    cursor: pointer;
+
+    font-size: 0.95rem;
+
+    transition: all 0.2s;
+
+    width: auto; /* Reset flex adjustments */
+
+    height: auto;
+
+}
+
+
+
+.nav-btn:hover {
+
+    background: var(--bg-color);
+
+}
+
+
+
+.nav-btn.primary {
+
+    background-color: var(--primary-color);
+
+    color: white;
+
+    border: 1px solid var(--primary-color);
+
+}
+
+
+
+.nav-btn.primary:hover {
+
+    opacity: 0.9;
+
+}
+
+
+
+/* Suggested Tags */
+
+.suggested-tag {
+
+    background-color: var(--bg-color);
+
+    border: 1px solid var(--border-color);
+
+    color: var(--text-color);
+
+    padding: 4px 10px;
+
+    border-radius: 15px;
+
+    font-size: 0.9rem;
+
+    cursor: pointer;
+
+    transition: all 0.2s;
+
+}
+
+
+
+.suggested-tag:hover {
+
+    background-color: var(--border-color);
+
+}

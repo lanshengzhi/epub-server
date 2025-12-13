@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gemini Reader Library</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+</head>
+<body class="library-page">
+
+    <header class="app-header">
+        <div class="header-left">
+            <h1><i class="fas fa-book-open"></i> Gemini Reader</h1>
+        </div>
+        <div class="header-right">
+            <input type="file" id="file-input" accept=".epub" style="display: none;">
+            <button id="import-btn" class="icon-btn" title="Import EPUB">
+                <i class="fas fa-upload"></i>
+            </button>
+            <button id="theme-toggle" class="icon-btn" aria-label="Toggle Dark Mode">
+                <i class="fas fa-moon"></i>
+            </button>
+        </div>
+    </header>
+
+    <main class="library-container">
+        <aside class="library-sidebar">
+            <div class="sidebar-header">
+                <h3><i class="fas fa-tags"></i> Categories</h3>
+            </div>
+            <ul id="category-list">
+                <!-- Categories injected here -->
+                <li class="active" data-category="all">All Books <span class="count"></span></li>
+            </ul>
+        </aside>
+
+        <div class="library-content">
+            <div class="library-controls">
+                <div class="sort-controls">
+                    <label for="sort-select">Sort by:</label>
+                    <select id="sort-select">
+                        <option value="title">Title</option>
+                        <option value="author">Author</option>
+                    </select>
+                </div>
+                <div class="view-controls">
+                    <button id="view-grid" class="icon-btn active" title="Grid View"><i class="fas fa-th-large"></i></button>
+                    <button id="view-list" class="icon-btn" title="List View"><i class="fas fa-list"></i></button>
+                </div>
+            </div>
+
+            <div class="library-grid" id="book-list">
+                <!-- Books will be injected here -->
+            </div>
+        </div>
+    </main>
+
+    <!-- Import Options Modal -->
+    <div id="import-options-modal" class="modal">
+        <div class="modal-content">
+            <h3>Import Options</h3>
+            <p>Selected File: <span id="import-filename" style="font-weight: bold;"></span></p>
+            
+            <div class="tag-input-container" style="margin-top: 15px;">
+                <input type="text" id="import-new-tag-input" placeholder="Add a category tag (e.g., 文学)...">
+                <button id="import-add-tag-btn" class="nav-btn">Add</button>
+            </div>
+
+            <label style="font-size: 0.9rem; color: var(--text-muted); display: block; margin-bottom: 5px;">Selected:</label>
+            <div id="import-active-tags" class="tags-container">
+                <!-- Selected tags will be injected here -->
+            </div>
+
+            <label style="font-size: 0.9rem; color: var(--text-muted); display: block; margin: 15px 0 5px;">Suggested Tags:</label>
+            <div id="import-suggested-tags" class="tags-container" style="background: transparent; border: none; padding: 0; min-height: auto;">
+                <!-- Suggested tags will be injected here -->
+            </div>
+            
+            <div class="modal-footer">
+                <button id="cancel-import-btn" class="nav-btn">Cancel</button>
+                <button id="confirm-upload-btn" class="nav-btn primary">Upload</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Upload Progress Modal -->
+    <div id="upload-modal" class="modal">
+        <div class="modal-content">
+            <h3>Importing Book...</h3>
+            <div id="upload-status">Uploading and processing...</div>
+            <div id="upload-logs" class="logs-container"></div>
+            <button id="close-modal" style="display:none; margin-top: 10px; padding: 10px; background: var(--primary-color); color: white; border-radius: 6px;">Close</button>
+        </div>
+    </div>
+
+    <!-- Edit Categories Modal -->
+    <div id="category-modal" class="modal">
+        <div class="modal-content">
+            <h3>Edit Categories</h3>
+            <p id="cat-book-title" style="margin-bottom: 15px; color: var(--text-muted);"></p>
+            
+            <div class="tag-input-container">
+                <input type="text" id="new-tag-input" placeholder="Add a category...">
+                <button id="add-tag-btn" class="nav-btn">Add</button>
+            </div>
+            
+            <label style="font-size: 0.9rem; color: var(--text-muted); display: block; margin-bottom: 5px;">Selected:</label>
+            <div id="active-tags" class="tags-container">
+                <!-- Tags will be injected here -->
+            </div>
+
+            <label style="font-size: 0.9rem; color: var(--text-muted); display: block; margin: 15px 0 5px;">Available Tags:</label>
+            <div id="suggested-tags" class="tags-container" style="background: transparent; border: none; padding: 0; min-height: auto;">
+                <!-- Existing tags will be injected here -->
+            </div>
+
+            <div class="modal-footer">
+                <button id="close-cat-modal" class="nav-btn">Cancel</button>
+                <button id="save-tags-btn" class="nav-btn primary">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/library.js"></script>
+</body>
+</html>

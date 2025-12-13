@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gemini Reader</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        /* PWA Specific Overrides/Additions */
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+        }
+        
+        .pwa-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        /* Hidden file input */
+        #file-input {
+            display: none;
+        }
+
+        /* Toast Notification */
+        #toast {
+            visibility: hidden;
+            min-width: 250px;
+            background-color: #333;
+            color: #fff;
+            text-align: center;
+            border-radius: 4px;
+            padding: 16px;
+            position: fixed;
+            z-index: 1000;
+            left: 50%;
+            bottom: 30px;
+            transform: translateX(-50%);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        #toast.show {
+            visibility: visible;
+            opacity: 1;
+        }
+        
+        /* Debug log hidden by default, can be toggled if needed */
+        #debug-log {
+            display: none; 
+            background: #222;
+            color: #0f0;
+            padding: 10px;
+            margin: 20px;
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: monospace;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+
+    <header class="app-header">
+        <div class="logo">
+            <i class="fas fa-book-open"></i> Gemini Reader <span style="font-size: 0.6em; opacity: 0.7; margin-left: 5px;">(Local)</span>
+        </div>
+        <div class="search-bar">
+            <i class="fas fa-search"></i>
+            <input type="text" id="search-input" placeholder="Search library...">
+        </div>
+        <div class="pwa-controls">
+            <!-- Add Book Button -->
+            <button id="import-btn-trigger" class="btn primary-btn">
+                <i class="fas fa-plus"></i> Import EPUB
+            </button>
+            <input type="file" id="file-input" accept=".epub">
+            
+            <!-- Reset Button -->
+            <button id="clear-db-btn" class="btn icon-btn" title="Reset Library" style="color: var(--text-muted);">
+                <i class="fas fa-trash-alt"></i>
+            </button>
+            
+            <button id="theme-toggle" class="btn icon-btn" title="Toggle Theme">
+                <i class="fas fa-moon"></i>
+            </button>
+        </div>
+    </header>
+
+    <main class="library-container">
+        <div id="book-list" class="library-grid">
+            <!-- Books will be injected here -->
+        </div>
+        
+        <!-- Empty State (Hidden by default) -->
+        <div id="empty-state" class="empty-state" style="display: none;">
+            <i class="fas fa-book" style="font-size: 4rem; color: var(--text-muted); margin-bottom: 20px;"></i>
+            <h2>Your library is empty</h2>
+            <p style="color: var(--text-muted);">Import an EPUB file to get started.</p>
+        </div>
+    </main>
+    
+    <div id="debug-log"></div>
+    <div id="toast"></div>
+
+    <!-- Libraries -->
+    <script src="../js/libs/jszip.min.js"></script>
+    <script src="../js/db_manager.js"></script>
+    
+    <!-- PWA Logic -->
+    <script src="../js/app_init.js"></script>
+    <script src="../js/library_pwa.js"></script>
+</body>
+</html>
