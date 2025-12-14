@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="format-detection" content="telephone=no">
-    <meta name="theme-color" content="#3b82f6">
+    <meta name="theme-color" content="#f3f4f6">
     <link rel="manifest" href="/manifest.webmanifest">
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
     <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
@@ -85,6 +85,58 @@
             <div class="reader-controls">
                 <button id="prev-chapter" class="nav-btn" disabled><i class="fas fa-chevron-left"></i> <span data-i18n="reader.prev">Previous</span></button>
                 <button id="next-chapter" class="nav-btn"><span data-i18n="reader.next">Next</span> <i class="fas fa-chevron-right"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mobile Reader Toolbars (WeChat Read style) -->
+    <nav id="reader-toolbar-bottom" class="reader-toolbar-bottom" aria-hidden="true">
+        <button id="toolbar-toc" type="button" class="reader-toolbar-btn" data-i18n-aria-label="reader.toc" aria-label="Table of Contents">
+            <i class="fas fa-list" aria-hidden="true"></i>
+        </button>
+        <button id="toolbar-notes" type="button" class="reader-toolbar-btn" data-i18n-aria-label="reader.notes" aria-label="Notes">
+            <i class="fas fa-pen-to-square" aria-hidden="true"></i>
+        </button>
+        <button id="toolbar-theme" type="button" class="reader-toolbar-btn" data-i18n-aria-label="reader.toggle_theme" aria-label="Toggle Theme">
+            <i class="fas fa-sun" aria-hidden="true"></i>
+        </button>
+        <button id="toolbar-typography" type="button" class="reader-toolbar-btn" data-i18n-aria-label="reader.typography" aria-label="Typography">
+            <i class="fas fa-font" aria-hidden="true"></i>
+        </button>
+    </nav>
+
+    <div id="reader-settings-sheet" class="reader-settings-sheet" aria-hidden="true">
+        <div class="settings-sheet-row">
+            <div class="settings-sheet-label" data-i18n="reader.font">Font</div>
+            <div class="settings-sheet-controls">
+                <button id="sheet-font-decrease" type="button" class="icon-btn" data-i18n-aria-label="reader.decrease_font" aria-label="Decrease Font Size">
+                    <i class="fas fa-minus" aria-hidden="true"></i>
+                </button>
+                <button id="sheet-font-increase" type="button" class="icon-btn" data-i18n-aria-label="reader.increase_font" aria-label="Increase Font Size">
+                    <i class="fas fa-plus" aria-hidden="true"></i>
+                </button>
+            </div>
+        </div>
+        <div class="settings-sheet-row">
+            <div class="settings-sheet-label" data-i18n="reader.margin">Margin</div>
+            <div class="settings-sheet-controls">
+                <button id="sheet-margin-increase" type="button" class="icon-btn" data-i18n-aria-label="reader.narrower_text" aria-label="Narrower Text">
+                    <i class="fas fa-compress-alt" aria-hidden="true"></i>
+                </button>
+                <button id="sheet-margin-decrease" type="button" class="icon-btn" data-i18n-aria-label="reader.wider_text" aria-label="Wider Text">
+                    <i class="fas fa-expand-alt" aria-hidden="true"></i>
+                </button>
+            </div>
+        </div>
+        <div class="settings-sheet-row">
+            <div class="settings-sheet-label" data-i18n="reader.line_height">Line Height</div>
+            <div class="settings-sheet-controls">
+                <button id="sheet-line-height-decrease" type="button" class="icon-btn" data-i18n-aria-label="reader.decrease_line_height" aria-label="Decrease Line Height">
+                    <i class="fas fa-minus" aria-hidden="true"></i>
+                </button>
+                <button id="sheet-line-height-increase" type="button" class="icon-btn" data-i18n-aria-label="reader.increase_line_height" aria-label="Increase Line Height">
+                    <i class="fas fa-plus" aria-hidden="true"></i>
+                </button>
             </div>
         </div>
     </div>

@@ -34,6 +34,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     const closeSidebarBtn = document.getElementById('close-sidebar');
     const closeSidebarBottomBtn = document.getElementById('close-sidebar-bottom');
     const sidebarBackdrop = document.getElementById('sidebar-backdrop');
+    const bottomToolbar = document.getElementById('reader-toolbar-bottom');
+    const toolbarTocBtn = document.getElementById('toolbar-toc');
+    const toolbarNotesBtn = document.getElementById('toolbar-notes');
+    const toolbarThemeBtn = document.getElementById('toolbar-theme');
+    const toolbarTypographyBtn = document.getElementById('toolbar-typography');
+    const settingsSheet = document.getElementById('reader-settings-sheet');
+    const sheetFontDecreaseBtn = document.getElementById('sheet-font-decrease');
+    const sheetFontIncreaseBtn = document.getElementById('sheet-font-increase');
+    const sheetMarginIncreaseBtn = document.getElementById('sheet-margin-increase');
+    const sheetMarginDecreaseBtn = document.getElementById('sheet-margin-decrease');
+    const sheetLineHeightDecreaseBtn = document.getElementById('sheet-line-height-decrease');
+    const sheetLineHeightIncreaseBtn = document.getElementById('sheet-line-height-increase');
     const selectionToolbar = document.getElementById('selection-toolbar');
     const annoMenu = document.getElementById('anno-menu');
     const noteModal = document.getElementById('note-modal');
@@ -59,13 +71,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         const ANNOTATIONS_API_BASE = `/api/books/${encodeURIComponent(bookDir)}/annotations`;
 
 	    let toastTimer = null;
-	    function showToast(message) {
+	    function showToast(message, durationMs = TOAST_DURATION_MS) {
 	        const toast = document.getElementById('toast');
         if (!toast) return;
         toast.textContent = message;
         toast.classList.add('show');
         if (toastTimer) window.clearTimeout(toastTimer);
-        toastTimer = window.setTimeout(() => toast.classList.remove('show'), TOAST_DURATION_MS);
+        const duration = Number(durationMs);
+        const timeout = Number.isFinite(duration) ? Math.max(0, duration) : TOAST_DURATION_MS;
+        toastTimer = window.setTimeout(() => toast.classList.remove('show'), timeout);
     }
 
     const sidebarOverlayQuery = typeof window.matchMedia === 'function'
@@ -90,6 +104,34 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         if (sidebarBackdrop) {
             sidebarBackdrop.classList.toggle('open', isOpen && isSidebarOverlayMode());
+        }
+    }
+
+    const topToolbar = document.querySelector('.reader-header');
+    let toolbarsVisible = false;
+    let settingsOpen = false;
+
+    function setSettingsOpen(isOpen) {
+        settingsOpen = !!isOpen;
+        const active = isSidebarOverlayMode();
+        if (!active) settingsOpen = false;
+        document.body.classList.toggle('settings-open', active && settingsOpen);
+        if (settingsSheet) settingsSheet.setAttribute('aria-hidden', active && settingsOpen ? 'false' : 'true');
+    }
+
+    function setToolbarsVisible(isVisible) {
+        toolbarsVisible = !!isVisible;
+        const active = isSidebarOverlayMode();
+        const visible = active && toolbarsVisible;
+        if (!active) toolbarsVisible = false;
+
+        document.body.classList.toggle('toolbars-visible', visible);
+        if (bottomToolbar) bottomToolbar.setAttribute('aria-hidden', visible ? 'false' : 'true');
+        if (topToolbar && active) topToolbar.setAttribute('aria-hidden', visible ? 'false' : 'true');
+
+        if (!visible) {
+            setSettingsOpen(false);
+            setSidebarOpen(false);
         }
     }
 
@@ -803,6 +845,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     let currentFontSize = parseInt(localStorage.getItem('fontSize')) || 100;
     let currentTheme = localStorage.getItem('theme') || 'light';
     let currentMaxWidth = parseInt(localStorage.getItem('maxWidth')) || 800;
+    let currentLineHeight = parseFloat(localStorage.getItem('lineHeight'));
+    if (!Number.isFinite(currentLineHeight)) currentLineHeight = 1.8;
 	    let currentFontProfile = localStorage.getItem('fontProfile') || 'serif';
 	    let loadChapterRequestId = 0;
 	    let transitionCleanupTimer = null;
@@ -1319,6 +1363,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
+    function updateThemeColorMeta() {
+        const meta = document.querySelector('meta[name="theme-color"]');
+        if (!meta) return;
+        try {
+            const bg = window.getComputedStyle(document.body).backgroundColor;
+            if (bg) meta.setAttribute('content', bg);
+        } catch {}
+    }
+
     function applySettings() {
         // Prevent "Wider Text" from becoming too wide on touch devices.
         const isTouchDevice = typeof window.matchMedia === 'function' && window.matchMedia('(pointer: coarse)').matches;
@@ -1328,11 +1381,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             localStorage.setItem('maxWidth', currentMaxWidth);
         }
 
-        contentViewer.style.fontSize = `${currentFontSize}%`;
-        contentViewer.style.maxWidth = `${currentMaxWidth}px`;
-        document.body.classList.toggle('dark-mode', currentTheme === 'dark');
-        contentViewer.style.setProperty('--reader-font', getFontStack(currentFontProfile));
-    }
+	        contentViewer.style.fontSize = `${currentFontSize}%`;
+	        contentViewer.style.lineHeight = String(currentLineHeight);
+	        contentViewer.style.maxWidth = `${currentMaxWidth}px`;
+            const isDark = currentTheme === 'dark';
+	        document.body.classList.toggle('dark-mode', isDark);
+            document.documentElement.classList.toggle('dark-mode', isDark);
+	        contentViewer.style.setProperty('--reader-font', getFontStack(currentFontProfile));
+            updateThemeColorMeta();
+	    }
     
 	    function getFontStack(profile) {
 	        const cjkSansFallback = [
@@ -1383,6 +1440,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
+    function cameFromLibraryReferrer() {
+        const ref = document.referrer;
+        if (!ref) return false;
+        try {
+            const refUrl = new URL(ref, window.location.href);
+            if (refUrl.origin !== window.location.origin) return false;
+            const path = refUrl.pathname || '';
+            return path === '/' || path.endsWith('/index.html') || path.endsWith('/index');
+        } catch {
+            return false;
+        }
+    }
+
     // --- Event Listeners ---
     if (backToLibraryLink) {
         backToLibraryLink.addEventListener('click', (e) => {
@@ -1404,6 +1474,31 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (sidebarBackdrop) sidebarBackdrop.addEventListener('click', () => setSidebarOpen(false));
 
     setSidebarOpen(!!(sidebar && sidebar.classList.contains('open')));
+
+    setToolbarsVisible(false);
+    setSettingsOpen(false);
+
+    if (isSidebarOverlayMode() && cameFromLibraryReferrer()) {
+        showToast(t('reader.tap_to_toggle_toolbars'), 5000);
+    }
+
+    if (scrollWrapper) {
+        scrollWrapper.addEventListener('click', (e) => {
+            if (!isSidebarOverlayMode()) return;
+            if (e.defaultPrevented) return;
+            if (noteModal && noteModal.classList.contains('show')) return;
+            if (notesModal && notesModal.classList.contains('show')) return;
+
+            const target = e.target;
+            if (target && target.closest) {
+                if (target.closest('a, button, input, textarea, select, label')) return;
+                if (target.closest('img')) return;
+            }
+
+            if (hasActiveTextSelectionInContent()) return;
+            setToolbarsVisible(!toolbarsVisible);
+        });
+    }
 
     // Mobile Settings Toggle
     const settingsToggle = document.getElementById('mobile-settings-toggle');
@@ -1458,23 +1553,53 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
-    document.getElementById('theme-toggle').onclick = () => {
+    function updateThemeIcons() {
+        const isDark = currentTheme === 'dark';
+
+        const headerBtn = document.getElementById('theme-toggle');
+        const headerIcon = headerBtn ? headerBtn.querySelector('i') : null;
+        const toolbarIcon = toolbarThemeBtn ? toolbarThemeBtn.querySelector('i') : null;
+
+        [headerIcon, toolbarIcon].forEach((icon) => {
+            if (!icon) return;
+            icon.classList.toggle('fa-moon', isDark);
+            icon.classList.toggle('fa-sun', !isDark);
+        });
+    }
+
+    function toggleTheme() {
         currentTheme = currentTheme === 'light' ? 'dark' : 'light';
         localStorage.setItem(THEME_KEY, currentTheme);
         applySettings();
-    };
-    
-    document.getElementById('font-increase').onclick = () => {
-        currentFontSize += 10;
+        updateThemeIcons();
+    }
+
+    const FONT_SIZE_STEP = 10;
+    function adjustFontSize(delta) {
+        const next = Math.max(50, currentFontSize + delta);
+        currentFontSize = next;
         localStorage.setItem('fontSize', currentFontSize);
         applySettings();
-    };
-    
-    document.getElementById('font-decrease').onclick = () => {
-        currentFontSize = Math.max(50, currentFontSize - 10);
-        localStorage.setItem('fontSize', currentFontSize);
+    }
+
+    const LINE_HEIGHT_MIN = 1.2;
+    const LINE_HEIGHT_MAX = 2.4;
+    const LINE_HEIGHT_STEP = 0.1;
+    function adjustLineHeight(delta) {
+        const next = Math.max(LINE_HEIGHT_MIN, Math.min(LINE_HEIGHT_MAX, currentLineHeight + delta));
+        currentLineHeight = Math.round(next * 100) / 100;
+        localStorage.setItem('lineHeight', String(currentLineHeight));
         applySettings();
-    };
+    }
+
+    const themeToggleBtn = document.getElementById('theme-toggle');
+    if (themeToggleBtn) themeToggleBtn.addEventListener('click', () => toggleTheme());
+    if (toolbarThemeBtn) toolbarThemeBtn.addEventListener('click', () => toggleTheme());
+
+    const fontIncreaseBtn = document.getElementById('font-increase');
+    if (fontIncreaseBtn) fontIncreaseBtn.addEventListener('click', () => adjustFontSize(FONT_SIZE_STEP));
+    const fontDecreaseBtn = document.getElementById('font-decrease');
+    if (fontDecreaseBtn) fontDecreaseBtn.addEventListener('click', () => adjustFontSize(-FONT_SIZE_STEP));
 
     const MIN_MAX_WIDTH = 420;
     const MAX_MAX_WIDTH = 1400;
@@ -1487,22 +1612,40 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const marginIncreaseBtn = document.getElementById('margin-increase');
     if (marginIncreaseBtn) {
-        marginIncreaseBtn.onclick = () => {
-            currentMaxWidth = Math.max(MIN_MAX_WIDTH, currentMaxWidth - WIDTH_STEP);
-            localStorage.setItem('maxWidth', currentMaxWidth);
-            showToast(t('reader.width_toast', { px: currentMaxWidth }));
-            applySettings();
-        };
+        marginIncreaseBtn.addEventListener('click', () => adjustMaxWidth(-WIDTH_STEP));
     }
 
     const marginDecreaseBtn = document.getElementById('margin-decrease');
     if (marginDecreaseBtn) {
-        marginDecreaseBtn.onclick = () => {
-            currentMaxWidth = Math.min(getMaxWidthCap(), currentMaxWidth + WIDTH_STEP);
-            localStorage.setItem('maxWidth', currentMaxWidth);
-            showToast(t('reader.width_toast', { px: currentMaxWidth }));
-            applySettings();
-        };
+        marginDecreaseBtn.addEventListener('click', () => adjustMaxWidth(WIDTH_STEP));
+    }
+
+    function adjustMaxWidth(delta) {
+        currentMaxWidth = Math.max(MIN_MAX_WIDTH, Math.min(getMaxWidthCap(), currentMaxWidth + delta));
+        localStorage.setItem('maxWidth', currentMaxWidth);
+        showToast(t('reader.width_toast', { px: currentMaxWidth }));
+        applySettings();
+    }
+
+    if (sheetFontDecreaseBtn) sheetFontDecreaseBtn.addEventListener('click', () => adjustFontSize(-FONT_SIZE_STEP));
+    if (sheetFontIncreaseBtn) sheetFontIncreaseBtn.addEventListener('click', () => adjustFontSize(FONT_SIZE_STEP));
+    if (sheetMarginIncreaseBtn) sheetMarginIncreaseBtn.addEventListener('click', () => adjustMaxWidth(-WIDTH_STEP));
+    if (sheetMarginDecreaseBtn) sheetMarginDecreaseBtn.addEventListener('click', () => adjustMaxWidth(WIDTH_STEP));
+    if (sheetLineHeightDecreaseBtn) sheetLineHeightDecreaseBtn.addEventListener('click', () => adjustLineHeight(-LINE_HEIGHT_STEP));
+    if (sheetLineHeightIncreaseBtn) sheetLineHeightIncreaseBtn.addEventListener('click', () => adjustLineHeight(LINE_HEIGHT_STEP));
+
+    if (toolbarTocBtn) {
+        toolbarTocBtn.addEventListener('click', () => {
+            setSettingsOpen(false);
+            setSidebarOpen(!sidebar.classList.contains('open'));
+        });
+    }
+
+    if (toolbarTypographyBtn) {
+        toolbarTypographyBtn.addEventListener('click', () => {
+            setSidebarOpen(false);
+            setSettingsOpen(!settingsOpen);
+        });
     }
 
     const fontProfiles = ['serif', 'sans', 'mono'];
@@ -1520,16 +1663,23 @@ document.addEventListener('DOMContentLoaded', async () => {
         updateFontChangeTitle();
     }
 
-        // --- Highlight / Notes UI ---
-        if (notesBtn) {
-            notesBtn.addEventListener('click', async () => {
-                hideSelectionToolbar();
-                hideAnnoMenu();
-                await refreshAnnotations({ silent: true });
-                renderNotesList();
-                openNotesModal();
-            });
-        }
+	        // --- Highlight / Notes UI ---
+	        async function openNotesUI() {
+	            setSettingsOpen(false);
+	            setSidebarOpen(false);
+	            hideSelectionToolbar();
+	            hideAnnoMenu();
+	            await refreshAnnotations({ silent: true });
+	            renderNotesList();
+	            openNotesModal();
+	        }
+
+	        if (notesBtn) {
+	            notesBtn.addEventListener('click', async () => openNotesUI());
+	        }
+	        if (toolbarNotesBtn) {
+	            toolbarNotesBtn.addEventListener('click', async () => openNotesUI());
+	        }
 
         if (notesCloseBtn) {
             notesCloseBtn.addEventListener('click', () => closeNotesModal());
@@ -1793,5 +1943,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         renderNotesList();
     });
     applySettings();
+    updateThemeIcons();
     loadToc();
 });
