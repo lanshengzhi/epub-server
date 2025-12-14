@@ -461,21 +461,20 @@ a { text-decoration: none; color: inherit; }
 
 /* Reader Layout */
 .reader-page {
-    height: 100vh; /* Fallback */
-    height: 100dvh;
+    min-height: 100svh;
     display: flex;
     flex-direction: column; /* Main page is column: Header + Body */
-    overflow: hidden;
+    overflow-y: auto;
+    background-color: var(--bg-color);
 }
 
 .reader-container {
     display: flex;
     flex-direction: row;
     flex-grow: 1;
-    overflow: hidden;
     position: relative;
-    height: calc(100vh - var(--header-total-height)); /* Fallback */
-    height: calc(100dvh - var(--header-total-height));
+    min-height: calc(100svh - var(--header-total-height));
+    overflow: visible;
 }
 
 .reader-toolbar-bottom,
@@ -538,8 +537,8 @@ a { text-decoration: none; color: inherit; }
     min-width: 0; /* Critical for flex containers */
 }
 
-/* Mobile Overlay Override */
-@media (max-width: 768px) {
+	/* Mobile Overlay Override */
+	@media (max-width: 768px) {
     .reader-header {
         position: fixed;
         top: 0;
@@ -568,20 +567,9 @@ a { text-decoration: none; color: inherit; }
         display: none !important;
     }
 
-	    /* Header is overlay, so reader container should fill viewport */
+	    /* Header is overlay; let container flow with page */
 	    .reader-container {
-	        height: 100vh; /* Fallback */
-	        height: 100dvh;
-	    }
-
-	    /* Full-bleed immersive reading (no bottom safe-area) */
-	    .reader-page .iframe-container {
-	        padding: 0;
-	        padding-top: env(safe-area-inset-top, 0px);
-	    }
-
-	    body.toolbars-visible.reader-page .iframe-container {
-	        padding-bottom: 56px;
+	        min-height: calc(100svh - var(--header-total-height));
 	    }
 
 	    .reader-progress-indicator {
@@ -610,8 +598,8 @@ a { text-decoration: none; color: inherit; }
 	        left: 0;
 	        right: 0;
 	        bottom: 0;
-	        height: 56px;
-	        padding: 0 16px;
+	        height: calc(56px + env(safe-area-inset-bottom, 0px));
+	        padding: 0 16px env(safe-area-inset-bottom, 0px);
 	        background-color: var(--header-bg);
 	        border-top: 1px solid var(--border-color);
 	        box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.08);
@@ -651,7 +639,7 @@ a { text-decoration: none; color: inherit; }
 	        position: fixed;
 	        left: 0;
 	        right: 0;
-	        bottom: 56px;
+	        bottom: calc(56px + env(safe-area-inset-bottom, 0px));
 	        padding: 14px 16px;
 	        background-color: var(--card-bg);
 	        border-top: 1px solid var(--border-color);
@@ -891,17 +879,14 @@ a { text-decoration: none; color: inherit; }
     }
 
     /* No on-screen prev/next on mobile (use swipe) */
-    .iframe-container {
-        padding-bottom: 0;
-    }
 }
 
 .iframe-container {
     flex-grow: 1;
     position: relative;
     width: 100%;
-    height: 100%; /* Important: constrain height to parent flex item */
-    overflow-y: auto; /* Enable vertical scroll */
+    height: auto;
+    overflow: visible;
     background-color: var(--bg-color); 
     scroll-behavior: smooth;
     -webkit-overflow-scrolling: touch;
@@ -909,7 +894,21 @@ a { text-decoration: none; color: inherit; }
     /* Flexbox for centering content-viewer */
     display: flex;
     justify-content: center; /* Center horizontally */
-    padding: 20px 0 80px 0; /* Add vertical padding for top/bottom if content is short */
+    padding: var(--pwa-safe-top) 0 calc(env(safe-area-inset-bottom, 0px) + 40px) 0;
+}
+
+@media (max-width: 768px) {
+    .reader-page .iframe-container {
+        padding: var(--pwa-safe-top) 0 calc(env(safe-area-inset-bottom, 0px) + 40px) 0 !important;
+        min-height: 100svh;
+    }
+}
+
+/* When bottom toolbar is visible on mobile, add its height */
+@media (max-width: 768px) {
+    body.toolbars-visible.reader-page .iframe-container {
+        padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px));
+    }
 }
 
 #content-viewer {
