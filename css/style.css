@@ -564,14 +564,22 @@ a { text-decoration: none; color: inherit; }
 
 .sidebar-footer {
     display: none;
-    padding: 12px 15px calc(12px + env(safe-area-inset-bottom, 0px));
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1;
+    padding: 12px 15px max(12px, env(safe-area-inset-bottom, 0px));
     border-top: 1px solid var(--border-color);
     background-color: var(--card-bg);
 }
 
 .sidebar-close-btn {
-    width: 100%;
     justify-content: center;
+}
+
+#close-sidebar-bottom {
+    width: 100%;
 }
 
 .toc-content ul {
@@ -671,6 +679,9 @@ a { text-decoration: none; color: inherit; }
     /* Sidebar Close (mobile-friendly footer button + backdrop) */
     #close-sidebar { display: none; }
     .sidebar-footer { display: block; }
+    .toc-content {
+        padding-bottom: calc(15px + 56px + max(12px, env(safe-area-inset-bottom, 0px)));
+    }
 }
 
 @media (max-width: 600px) {
