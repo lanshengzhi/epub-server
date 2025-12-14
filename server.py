@@ -7,11 +7,13 @@ import glob
 import json
 import threading
 import time
+import mimetypes
 from urllib.parse import unquote
 from flask import Flask, request, jsonify, send_from_directory
 from bs4 import BeautifulSoup
 
 app = Flask(__name__)
+mimetypes.add_type('application/manifest+json', '.webmanifest')
 
 UPLOAD_FOLDER = 'temp_uploads'
 LIBRARY_FOLDER = 'library'

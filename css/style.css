@@ -10,6 +10,10 @@
     --sidebar-width: 300px;
     --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
     --transition: 0.3s ease;
+    --pwa-safe-top: 0px;
+    --pwa-safe-right: 0px;
+    --pwa-safe-bottom: 0px;
+    --pwa-safe-left: 0px;
     
     /* Code Block Colors (Default Light) */
     --code-bg: #282c34; /* Atom One Dark bg */
@@ -20,6 +24,17 @@
     /* Reader Annotations */
     --anno-bg-color: rgba(250, 204, 21, 0.35);
     --anno-underline-color: rgba(245, 158, 11, 0.95);
+}
+
+html.pwa-standalone {
+    --pwa-safe-top: env(safe-area-inset-top, 0px);
+    --pwa-safe-right: env(safe-area-inset-right, 0px);
+    --pwa-safe-bottom: env(safe-area-inset-bottom, 0px);
+    --pwa-safe-left: env(safe-area-inset-left, 0px);
+}
+
+html {
+    --header-total-height: calc(var(--header-height) + var(--pwa-safe-top));
 }
 
 body.dark-mode {
@@ -79,13 +94,13 @@ a { text-decoration: none; color: inherit; }
 
 /* Header */
 .app-header, .reader-header {
-    height: var(--header-height);
+    height: var(--header-total-height);
     background-color: var(--header-bg);
     border-bottom: 1px solid var(--border-color);
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0 20px;
+    padding: var(--pwa-safe-top) calc(20px + var(--pwa-safe-right)) 0 calc(20px + var(--pwa-safe-left));
     box-shadow: var(--shadow);
     position: sticky;
     top: 0;
@@ -142,7 +157,7 @@ a { text-decoration: none; color: inherit; }
     padding: 20px;
     box-shadow: var(--shadow);
     position: sticky;
-    top: calc(var(--header-height) + 20px);
+    top: calc(var(--header-total-height) + 20px);
 }
 
 .sidebar-header h3 {
@@ -454,8 +469,8 @@ a { text-decoration: none; color: inherit; }
     flex-grow: 1;
     overflow: hidden;
     position: relative;
-    height: calc(100vh - var(--header-height)); /* Fallback */
-    height: calc(100dvh - var(--header-height));
+    height: calc(100vh - var(--header-total-height)); /* Fallback */
+    height: calc(100dvh - var(--header-total-height));
 }
 
 .sidebar {
@@ -637,7 +652,7 @@ a { text-decoration: none; color: inherit; }
     .settings-group {
         display: none; /* Hidden by default on mobile */
         position: absolute;
-        top: var(--header-height);
+        top: var(--header-total-height);
         right: 0;
         background-color: var(--header-bg);
         border-bottom: 1px solid var(--border-color);
@@ -1048,8 +1063,8 @@ a { text-decoration: none; color: inherit; }
 
 .lightbox-close {
     position: absolute;
-    top: 20px;
-    right: 30px;
+    top: calc(20px + var(--pwa-safe-top));
+    right: calc(30px + var(--pwa-safe-right));
     color: #f1f1f1;
     font-size: 40px;
     font-weight: bold;
@@ -1118,7 +1133,7 @@ a { text-decoration: none; color: inherit; }
     position: fixed;
     z-index: 3000;
     left: 50%;
-    bottom: 30px;
+    bottom: calc(30px + var(--pwa-safe-bottom));
     transform: translateX(-50%);
     opacity: 0;
     transition: opacity 0.25s ease, transform 0.25s ease;

@@ -11,9 +11,25 @@
             } catch {
                 document.documentElement.classList.add('library-view-grid');
             }
+
+            try {
+                const isStandalone =
+                    (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) ||
+                    window.navigator.standalone === true;
+                if (isStandalone) document.documentElement.classList.add('pwa-standalone');
+            } catch {}
         })();
     </script>
     <title data-i18n="library.page_title">EPUB Reader Library</title>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="EPUB Reader">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="theme-color" content="#3b82f6">
+    <link rel="manifest" href="/manifest.webmanifest">
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 </head>
@@ -138,6 +154,7 @@
     </div>
 
     <script src="js/i18n.js"></script>
+    <script src="js/pwa.js"></script>
     <script src="js/library.js"></script>
 </body>
 </html>

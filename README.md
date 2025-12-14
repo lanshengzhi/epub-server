@@ -73,6 +73,19 @@ A modern, web-based EPUB reader with a lightweight Python server backend.
 3.  **Open the Library**:
     Navigate to [http://localhost:8000](http://localhost:8000) in your web browser.
 
+## iPhone (PWA / No Address Bar)
+
+On iOS, the address bar can only be hidden when you launch the site from a Home Screen icon (standalone mode).
+
+1.  Make sure your iPhone can reach the server (same Wi‑Fi/LAN).
+2.  Open the site in **Safari** (e.g. `http://<server-ip>:8000`).
+3.  Tap **Share** → **Add to Home Screen**.
+4.  Launch **EPUB Reader** from the Home Screen icon (no address bar).
+
+Notes:
+- Opening the site directly in Safari will still show the address bar.
+- Offline caching via Service Worker requires `https://` (or `http://localhost`); on plain LAN `http://` it will still work as a Home Screen app, just without offline caching.
+
 4.  **Read**:
     Click on a book cover to open the Modern Reader.
 
