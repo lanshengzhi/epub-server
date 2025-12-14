@@ -1,5 +1,5 @@
 /* eslint-disable no-undef */
-const STATIC_CACHE = 'epub-reader-static-v1';
+const STATIC_CACHE = 'epub-reader-static-v2';
 
 const STATIC_ASSETS = [
   '/',
