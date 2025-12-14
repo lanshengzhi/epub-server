@@ -878,5 +878,16 @@ document.addEventListener('DOMContentLoaded', () => {
         updateCategories();
         updateDisplay();
     });
+    window.addEventListener('pageshow', (event) => {
+        if (!event.persisted) return;
+        if (Array.isArray(booksData) && booksData.length > 0) {
+            requestAnimationFrame(() => {
+                updateCategories();
+                updateDisplay();
+            });
+            return;
+        }
+        loadBooks();
+    });
     loadBooks();
 });

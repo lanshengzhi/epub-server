@@ -1,0 +1,130 @@
+Starting server on port 8000...
+ * Serving Flask app 'server'
+ * Debug mode: off
+[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:8000
+ * Running on http://192.168.3.66:8000
+[33mPress CTRL+C to quit[0m
+Scanning for books...
+127.0.0.1 - - [14/Dec/2025 02:57:44] "GET /api/books HTTP/1.1" 200 -
+Scanning for books...
+127.0.0.1 - - [14/Dec/2025 02:57:44] "GET /api/books HTTP/1.1" 200 -
+Scanning for books...
+127.0.0.1 - - [14/Dec/2025 02:57:51] "GET /api/books HTTP/1.1" 200 -
+100.69.170.85 - - [14/Dec/2025 02:59:20] "[36mGET /index.html HTTP/1.1[0m" 304 -
+100.69.170.85 - - [14/Dec/2025 02:59:20] "[36mGET /css/style.css HTTP/1.1[0m" 304 -
+100.69.170.85 - - [14/Dec/2025 02:59:20] "[36mGET /js/i18n.js HTTP/1.1[0m" 304 -
+100.69.170.85 - - [14/Dec/2025 02:59:20] "GET /js/library.js HTTP/1.1" 200 -
+100.69.170.85 - - [14/Dec/2025 02:59:20] "[36mGET /js/pwa.js HTTP/1.1[0m" 304 -
+Scanning for books...
+100.69.170.85 - - [14/Dec/2025 02:59:20] "GET /api/books HTTP/1.1" 200 -
+100.69.170.85 - - [14/Dec/2025 02:59:21] "[36mGET /黄色い家__川上未映子___Z-Library_/cover.jpeg HTTP/1.1[0m" 304 -
+100.69.170.85 - - [14/Dec/2025 02:59:21] "[36mGET /嫌われる勇気_自己啓発の源流_アドラー_の教え__岸見一郎__古賀史健___Z-Library_/cover.jpeg HTTP/1.1[0m" 304 -
+100.69.170.85 - - [14/Dec/2025 02:59:21] "[36mGET /DIEWITHZERO人生が豊かになりすぎる究極のルール/OEBPS/Images/cover00125.jpeg HTTP/1.1[0m" 304 -
+100.69.170.85 - - [14/Dec/2025 02:59:21] "[36mGET /The_Right_Side_of_History_How_Reason_and_Moral_Purpose_Made_the_West_Great__Ben_Shapiro___Z-Library_/OEBPS/images/9780062857927_Cover.jpg HTTP/1.1[0m" 304 -
+100.69.170.85 - - [14/Dec/2025 02:59:21] "[36mGET /Discovering_Modern_C__/OEBPS/Images/9780137833016.jpg HTTP/1.1[0m" 304 -
+100.69.170.85 - - [14/Dec/2025 02:59:21] "[36mGET /Story_Substance__Structure__Style_and_the_Principles_of_Screenwriting-Robert_McKee_/OEBPS/images/9780062039828_cvi.jpg HTTP/1.1[0m" 304 -
+100.69.170.85 - - [14/Dec/2025 02:59:21] "[36mGET /Suicide_of_the_West_An_Essay_on_the_Meaning_and_Destiny_of_Liberalism__James_Burnham___Z-Library_/OEBPS/images/9781594037849.jpg HTTP/1.1[0m" 304 -
+100.69.170.85 - - [14/Dec/2025 02:59:21] "[36mGET /The_Art_of_UNIX_Programming__Eric_S__Raymond___Z-Library_/cover.jpeg HTTP/1.1[0m" 304 -
+100.69.170.85 - - [14/Dec/2025 02:59:21] "[36mGET /哈利波特全集__Rowling_J_K___J_K_罗琳__马爱农__马爱新___Z-Library_/OEBPS/Images/cover.jpg HTTP/1.1[0m" 304 -
+100.69.170.85 - - [14/Dec/2025 02:59:21] "[36mGET /人類大歷史-從野獸到扮演上帝/OEBPS/Images/Cover.jpg HTTP/1.1[0m" 304 -
+100.69.170.85 - - [14/Dec/2025 02:59:21] "[36mGET /ねじまき鳥クロニクル_第１部_泥棒かささぎ編_新潮文庫_村上春樹/OEBPS/Images/embed0000_HD.jpg HTTP/1.1[0m" 304 -
+100.69.170.85 - - [14/Dec/2025 02:59:21] "[36mGET /海辺のカフカ_上___村上春樹___Z-Library_/OPS/images/0001.jpg HTTP/1.1[0m" 304 -
+100.69.170.85 - - [14/Dec/2025 02:59:21] "[36mGET /Whats_Our_Problem__A_Self-Help_Book_for_Societies__Tim_Urban__/OEBPS/Images/wop-cover.png HTTP/1.1[0m" 304 -
+100.69.170.85 - - [14/Dec/2025 02:59:21] "[36mGET /行為_暴力_競爭_利他_人類行為背後的生物學___Behave_The_Biology_of_Humans_at_Our_Best_and_Worst__羅伯___薩波斯基__Robert_M__Sapolsky__著__吳芠_譯___Z-Library_/OEBPS/image/cover.jpg HTTP/1.1[0m" 304 -
+100.69.170.85 - - [14/Dec/2025 02:59:21] "[36mGET /夢をかなえるゾウ1__水野敬也___Z-Library_/OEBPS/Images/embed0012_HD.jpg HTTP/1.1[0m" 304 -
+100.69.170.85 - - [14/Dec/2025 02:59:21] "[36mGET /诡秘之主__爱潜水的乌贼___Z-Library_/OEBPS/Images/cover.png HTTP/1.1[0m" 304 -
+100.69.170.85 - - [14/Dec/2025 02:59:21] "[36mGET /How_to_Design_Programs_An_Introduction_to_Programming_and_Computing__Matthias_Felleisen__Robert_Bruce_Findler_etc__/images/00786.jpeg HTTP/1.1[0m" 304 -
+100.69.170.85 - - [14/Dec/2025 02:59:21] "[36mGET /Patterns_in_C/OEBPS/images/title_page.jpg HTTP/1.1[0m" 304 -
+100.69.170.85 - - [14/Dec/2025 02:59:21] "[36mGET /下町ロケット__池井戸_潤___Z-Library_/OEBPS/Images/cover00234.jpeg HTTP/1.1[0m" 304 -
+100.69.170.85 - - [14/Dec/2025 02:59:21] "[36mGET /連結/OEBPS/Images/Cover.jpg HTTP/1.1[0m" 304 -
+100.69.170.85 - - [14/Dec/2025 02:59:21] "[36mGET /黄色的家___日_川上未映子___Z-Library_/EPUB/images/cover.jpg HTTP/1.1[0m" 304 -
+100.69.170.85 - - [14/Dec/2025 02:59:21] "[36mGET /icons/icon-192.png HTTP/1.1[0m" 304 -
+100.69.170.85 - - [14/Dec/2025 02:59:22] "[36mGET /index.html HTTP/1.1[0m" 304 -
+100.69.170.85 - - [14/Dec/2025 02:59:22] "[36mGET /css/style.css HTTP/1.1[0m" 304 -
+100.69.170.85 - - [14/Dec/2025 02:59:22] "[36mGET /js/i18n.js HTTP/1.1[0m" 304 -
+100.69.170.85 - - [14/Dec/2025 02:59:22] "[36mGET /js/pwa.js HTTP/1.1[0m" 304 -
+100.69.170.85 - - [14/Dec/2025 02:59:22] "[36mGET /js/library.js HTTP/1.1[0m" 304 -
+Scanning for books...
+100.69.170.85 - - [14/Dec/2025 02:59:22] "GET /api/books HTTP/1.1" 200 -
+100.69.170.85 - - [14/Dec/2025 02:59:22] "[36mGET /黄色い家__川上未映子___Z-Library_/cover.jpeg HTTP/1.1[0m" 304 -
+100.69.170.85 - - [14/Dec/2025 02:59:22] "[36mGET /嫌われる勇気_自己啓発の源流_アドラー_の教え__岸見一郎__古賀史健___Z-Library_/cover.jpeg HTTP/1.1[0m" 304 -
+100.69.170.85 - - [14/Dec/2025 02:59:22] "[36mGET /The_Right_Side_of_History_How_Reason_and_Moral_Purpose_Made_the_West_Great__Ben_Shapiro___Z-Library_/OEBPS/images/9780062857927_Cover.jpg HTTP/1.1[0m" 304 -
+100.69.170.85 - - [14/Dec/2025 02:59:22] "[36mGET /Story_Substance__Structure__Style_and_the_Principles_of_Screenwriting-Robert_McKee_/OEBPS/images/9780062039828_cvi.jpg HTTP/1.1[0m" 304 -
+100.69.170.85 - - [14/Dec/2025 02:59:22] "[36mGET /DIEWITHZERO人生が豊かになりすぎる究極のルール/OEBPS/Images/cover00125.jpeg HTTP/1.1[0m" 304 -
+100.69.170.85 - - [14/Dec/2025 02:59:22] "[36mGET /Discovering_Modern_C__/OEBPS/Images/9780137833016.jpg HTTP/1.1[0m" 304 -
+100.69.170.85 - - [14/Dec/2025 02:59:22] "[36mGET /Suicide_of_the_West_An_Essay_on_the_Meaning_and_Destiny_of_Liberalism__James_Burnham___Z-Library_/OEBPS/images/9781594037849.jpg HTTP/1.1[0m" 304 -
+100.69.170.85 - - [14/Dec/2025 02:59:22] "[36mGET /Whats_Our_Problem__A_Self-Help_Book_for_Societies__Tim_Urban__/OEBPS/Images/wop-cover.png HTTP/1.1[0m" 304 -
+100.69.170.85 - - [14/Dec/2025 02:59:22] "[36mGET /The_Art_of_UNIX_Programming__Eric_S__Raymond___Z-Library_/cover.jpeg HTTP/1.1[0m" 304 -
+100.69.170.85 - - [14/Dec/2025 02:59:22] "[36mGET /人類大歷史-從野獸到扮演上帝/OEBPS/Images/Cover.jpg HTTP/1.1[0m" 304 -
+100.69.170.85 - - [14/Dec/2025 02:59:22] "[36mGET /ねじまき鳥クロニクル_第１部_泥棒かささぎ編_新潮文庫_村上春樹/OEBPS/Images/embed0000_HD.jpg HTTP/1.1[0m" 304 -
+100.69.170.85 - - [14/Dec/2025 02:59:22] "[36mGET /哈利波特全集__Rowling_J_K___J_K_罗琳__马爱农__马爱新___Z-Library_/OEBPS/Images/cover.jpg HTTP/1.1[0m" 304 -
+100.69.170.85 - - [14/Dec/2025 02:59:22] "[36mGET /海辺のカフカ_上___村上春樹___Z-Library_/OPS/images/0001.jpg HTTP/1.1[0m" 304 -
+100.69.170.85 - - [14/Dec/2025 02:59:22] "[36mGET /夢をかなえるゾウ1__水野敬也___Z-Library_/OEBPS/Images/embed0012_HD.jpg HTTP/1.1[0m" 304 -
+100.69.170.85 - - [14/Dec/2025 02:59:22] "[36mGET /行為_暴力_競爭_利他_人類行為背後的生物學___Behave_The_Biology_of_Humans_at_Our_Best_and_Worst__羅伯___薩波斯基__Robert_M__Sapolsky__著__吳芠_譯___Z-Library_/OEBPS/image/cover.jpg HTTP/1.1[0m" 304 -
+100.69.170.85 - - [14/Dec/2025 02:59:22] "[36mGET /诡秘之主__爱潜水的乌贼___Z-Library_/OEBPS/Images/cover.png HTTP/1.1[0m" 304 -
+100.69.170.85 - - [14/Dec/2025 02:59:22] "[36mGET /Patterns_in_C/OEBPS/images/title_page.jpg HTTP/1.1[0m" 304 -
+100.69.170.85 - - [14/Dec/2025 02:59:22] "[36mGET /How_to_Design_Programs_An_Introduction_to_Programming_and_Computing__Matthias_Felleisen__Robert_Bruce_Findler_etc__/images/00786.jpeg HTTP/1.1[0m" 304 -
+100.69.170.85 - - [14/Dec/2025 02:59:22] "[36mGET /下町ロケット__池井戸_潤___Z-Library_/OEBPS/Images/cover00234.jpeg HTTP/1.1[0m" 304 -
+100.69.170.85 - - [14/Dec/2025 02:59:22] "[36mGET /黄色的家___日_川上未映子___Z-Library_/EPUB/images/cover.jpg HTTP/1.1[0m" 304 -
+100.69.170.85 - - [14/Dec/2025 02:59:22] "[36mGET /連結/OEBPS/Images/Cover.jpg HTTP/1.1[0m" 304 -
+100.69.170.85 - - [14/Dec/2025 02:59:22] "[36mGET /icons/icon-192.png HTTP/1.1[0m" 304 -
+100.69.170.85 - - [14/Dec/2025 02:59:23] "[36mGET /index.html HTTP/1.1[0m" 304 -
+100.69.170.85 - - [14/Dec/2025 02:59:23] "[36mGET /css/style.css HTTP/1.1[0m" 304 -
+100.69.170.85 - - [14/Dec/2025 02:59:23] "[36mGET /js/i18n.js HTTP/1.1[0m" 304 -
+100.69.170.85 - - [14/Dec/2025 02:59:23] "[36mGET /js/pwa.js HTTP/1.1[0m" 304 -
+100.69.170.85 - - [14/Dec/2025 02:59:23] "[36mGET /js/library.js HTTP/1.1[0m" 304 -
+Scanning for books...
+100.69.170.85 - - [14/Dec/2025 02:59:23] "GET /api/books HTTP/1.1" 200 -
+100.69.170.85 - - [14/Dec/2025 02:59:23] "[36mGET /黄色い家__川上未映子___Z-Library_/cover.jpeg HTTP/1.1[0m" 304 -
+100.69.170.85 - - [14/Dec/2025 02:59:23] "[36mGET /The_Right_Side_of_History_How_Reason_and_Moral_Purpose_Made_the_West_Great__Ben_Shapiro___Z-Library_/OEBPS/images/9780062857927_Cover.jpg HTTP/1.1[0m" 304 -
+100.69.170.85 - - [14/Dec/2025 02:59:23] "[36mGET /嫌われる勇気_自己啓発の源流_アドラー_の教え__岸見一郎__古賀史健___Z-Library_/cover.jpeg HTTP/1.1[0m" 304 -
+100.69.170.85 - - [14/Dec/2025 02:59:23] "[36mGET /DIEWITHZERO人生が豊かになりすぎる究極のルール/OEBPS/Images/cover00125.jpeg HTTP/1.1[0m" 304 -
+100.69.170.85 - - [14/Dec/2025 02:59:23] "[36mGET /Discovering_Modern_C__/OEBPS/Images/9780137833016.jpg HTTP/1.1[0m" 304 -
+100.69.170.85 - - [14/Dec/2025 02:59:23] "[36mGET /Suicide_of_the_West_An_Essay_on_the_Meaning_and_Destiny_of_Liberalism__James_Burnham___Z-Library_/OEBPS/images/9781594037849.jpg HTTP/1.1[0m" 304 -
+100.69.170.85 - - [14/Dec/2025 02:59:23] "[36mGET /Whats_Our_Problem__A_Self-Help_Book_for_Societies__Tim_Urban__/OEBPS/Images/wop-cover.png HTTP/1.1[0m" 304 -
+100.69.170.85 - - [14/Dec/2025 02:59:23] "[36mGET /The_Art_of_UNIX_Programming__Eric_S__Raymond___Z-Library_/cover.jpeg HTTP/1.1[0m" 304 -
+100.69.170.85 - - [14/Dec/2025 02:59:23] "[36mGET /人類大歷史-從野獸到扮演上帝/OEBPS/Images/Cover.jpg HTTP/1.1[0m" 304 -
+100.69.170.85 - - [14/Dec/2025 02:59:23] "[36mGET /Story_Substance__Structure__Style_and_the_Principles_of_Screenwriting-Robert_McKee_/OEBPS/images/9780062039828_cvi.jpg HTTP/1.1[0m" 304 -
+100.69.170.85 - - [14/Dec/2025 02:59:23] "[36mGET /ねじまき鳥クロニクル_第１部_泥棒かささぎ編_新潮文庫_村上春樹/OEBPS/Images/embed0000_HD.jpg HTTP/1.1[0m" 304 -
+100.69.170.85 - - [14/Dec/2025 02:59:23] "[36mGET /哈利波特全集__Rowling_J_K___J_K_罗琳__马爱农__马爱新___Z-Library_/OEBPS/Images/cover.jpg HTTP/1.1[0m" 304 -
+100.69.170.85 - - [14/Dec/2025 02:59:23] "[36mGET /夢をかなえるゾウ1__水野敬也___Z-Library_/OEBPS/Images/embed0012_HD.jpg HTTP/1.1[0m" 304 -
+100.69.170.85 - - [14/Dec/2025 02:59:23] "[36mGET /How_to_Design_Programs_An_Introduction_to_Programming_and_Computing__Matthias_Felleisen__Robert_Bruce_Findler_etc__/images/00786.jpeg HTTP/1.1[0m" 304 -
+100.69.170.85 - - [14/Dec/2025 02:59:23] "[36mGET /海辺のカフカ_上___村上春樹___Z-Library_/OPS/images/0001.jpg HTTP/1.1[0m" 304 -
+100.69.170.85 - - [14/Dec/2025 02:59:23] "[36mGET /行為_暴力_競爭_利他_人類行為背後的生物學___Behave_The_Biology_of_Humans_at_Our_Best_and_Worst__羅伯___薩波斯基__Robert_M__Sapolsky__著__吳芠_譯___Z-Library_/OEBPS/image/cover.jpg HTTP/1.1[0m" 304 -
+100.69.170.85 - - [14/Dec/2025 02:59:23] "[36mGET /诡秘之主__爱潜水的乌贼___Z-Library_/OEBPS/Images/cover.png HTTP/1.1[0m" 304 -
+100.69.170.85 - - [14/Dec/2025 02:59:23] "[36mGET /下町ロケット__池井戸_潤___Z-Library_/OEBPS/Images/cover00234.jpeg HTTP/1.1[0m" 304 -
+100.69.170.85 - - [14/Dec/2025 02:59:23] "[36mGET /Patterns_in_C/OEBPS/images/title_page.jpg HTTP/1.1[0m" 304 -
+100.69.170.85 - - [14/Dec/2025 02:59:23] "[36mGET /黄色的家___日_川上未映子___Z-Library_/EPUB/images/cover.jpg HTTP/1.1[0m" 304 -
+100.69.170.85 - - [14/Dec/2025 02:59:23] "[36mGET /連結/OEBPS/Images/Cover.jpg HTTP/1.1[0m" 304 -
+100.69.170.85 - - [14/Dec/2025 02:59:23] "[36mGET /icons/icon-192.png HTTP/1.1[0m" 304 -
+100.69.170.85 - - [14/Dec/2025 02:59:28] "[36mGET /index.html HTTP/1.1[0m" 304 -
+100.69.170.85 - - [14/Dec/2025 02:59:28] "[36mGET /css/style.css HTTP/1.1[0m" 304 -
+100.69.170.85 - - [14/Dec/2025 02:59:28] "[36mGET /js/i18n.js HTTP/1.1[0m" 304 -
+100.69.170.85 - - [14/Dec/2025 02:59:28] "[36mGET /js/library.js HTTP/1.1[0m" 304 -
+100.69.170.85 - - [14/Dec/2025 02:59:28] "[36mGET /js/pwa.js HTTP/1.1[0m" 304 -
+Scanning for books...
+100.69.170.85 - - [14/Dec/2025 02:59:28] "GET /api/books HTTP/1.1" 200 -
+100.69.170.85 - - [14/Dec/2025 02:59:28] "[36mGET /黄色い家__川上未映子___Z-Library_/cover.jpeg HTTP/1.1[0m" 304 -
+100.69.170.85 - - [14/Dec/2025 02:59:28] "[36mGET /The_Right_Side_of_History_How_Reason_and_Moral_Purpose_Made_the_West_Great__Ben_Shapiro___Z-Library_/OEBPS/images/9780062857927_Cover.jpg HTTP/1.1[0m" 304 -
+100.69.170.85 - - [14/Dec/2025 02:59:28] "[36mGET /嫌われる勇気_自己啓発の源流_アドラー_の教え__岸見一郎__古賀史健___Z-Library_/cover.jpeg HTTP/1.1[0m" 304 -
+100.69.170.85 - - [14/Dec/2025 02:59:28] "[36mGET /Story_Substance__Structure__Style_and_the_Principles_of_Screenwriting-Robert_McKee_/OEBPS/images/9780062039828_cvi.jpg HTTP/1.1[0m" 304 -
+100.69.170.85 - - [14/Dec/2025 02:59:28] "[36mGET /DIEWITHZERO人生が豊かになりすぎる究極のルール/OEBPS/Images/cover00125.jpeg HTTP/1.1[0m" 304 -
+100.69.170.85 - - [14/Dec/2025 02:59:28] "[36mGET /Suicide_of_the_West_An_Essay_on_the_Meaning_and_Destiny_of_Liberalism__James_Burnham___Z-Library_/OEBPS/images/9781594037849.jpg HTTP/1.1[0m" 304 -
+100.69.170.85 - - [14/Dec/2025 02:59:28] "[36mGET /Discovering_Modern_C__/OEBPS/Images/9780137833016.jpg HTTP/1.1[0m" 304 -
+100.69.170.85 - - [14/Dec/2025 02:59:28] "[36mGET /The_Art_of_UNIX_Programming__Eric_S__Raymond___Z-Library_/cover.jpeg HTTP/1.1[0m" 304 -
+100.69.170.85 - - [14/Dec/2025 02:59:28] "[36mGET /Whats_Our_Problem__A_Self-Help_Book_for_Societies__Tim_Urban__/OEBPS/Images/wop-cover.png HTTP/1.1[0m" 304 -
+100.69.170.85 - - [14/Dec/2025 02:59:28] "[36mGET /ねじまき鳥クロニクル_第１部_泥棒かささぎ編_新潮文庫_村上春樹/OEBPS/Images/embed0000_HD.jpg HTTP/1.1[0m" 304 -
+100.69.170.85 - - [14/Dec/2025 02:59:28] "[36mGET /人類大歷史-從野獸到扮演上帝/OEBPS/Images/Cover.jpg HTTP/1.1[0m" 304 -
+100.69.170.85 - - [14/Dec/2025 02:59:28] "[36mGET /哈利波特全集__Rowling_J_K___J_K_罗琳__马爱农__马爱新___Z-Library_/OEBPS/Images/cover.jpg HTTP/1.1[0m" 304 -
+100.69.170.85 - - [14/Dec/2025 02:59:28] "[36mGET /夢をかなえるゾウ1__水野敬也___Z-Library_/OEBPS/Images/embed0012_HD.jpg HTTP/1.1[0m" 304 -
+100.69.170.85 - - [14/Dec/2025 02:59:28] "[36mGET /海辺のカフカ_上___村上春樹___Z-Library_/OPS/images/0001.jpg HTTP/1.1[0m" 304 -
+100.69.170.85 - - [14/Dec/2025 02:59:28] "[36mGET /诡秘之主__爱潜水的乌贼___Z-Library_/OEBPS/Images/cover.png HTTP/1.1[0m" 304 -
+100.69.170.85 - - [14/Dec/2025 02:59:28] "[36mGET /行為_暴力_競爭_利他_人類行為背後的生物學___Behave_The_Biology_of_Humans_at_Our_Best_and_Worst__羅伯___薩波斯基__Robert_M__Sapolsky__著__吳芠_譯___Z-Library_/OEBPS/image/cover.jpg HTTP/1.1[0m" 304 -
+100.69.170.85 - - [14/Dec/2025 02:59:28] "[36mGET /How_to_Design_Programs_An_Introduction_to_Programming_and_Computing__Matthias_Felleisen__Robert_Bruce_Findler_etc__/images/00786.jpeg HTTP/1.1[0m" 304 -
+100.69.170.85 - - [14/Dec/2025 02:59:28] "[36mGET /Patterns_in_C/OEBPS/images/title_page.jpg HTTP/1.1[0m" 304 -
+100.69.170.85 - - [14/Dec/2025 02:59:28] "[36mGET /下町ロケット__池井戸_潤___Z-Library_/OEBPS/Images/cover00234.jpeg HTTP/1.1[0m" 304 -
+100.69.170.85 - - [14/Dec/2025 02:59:28] "[36mGET /連結/OEBPS/Images/Cover.jpg HTTP/1.1[0m" 304 -
+100.69.170.85 - - [14/Dec/2025 02:59:28] "[36mGET /黄色的家___日_川上未映子___Z-Library_/EPUB/images/cover.jpg HTTP/1.1[0m" 304 -
+100.69.170.85 - - [14/Dec/2025 02:59:28] "[36mGET /icons/icon-192.png HTTP/1.1[0m" 304 -

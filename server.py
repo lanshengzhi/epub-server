@@ -26,6 +26,17 @@ if not os.path.exists(UPLOAD_FOLDER):
 if not os.path.exists(LIBRARY_FOLDER):
     os.makedirs(LIBRARY_FOLDER)
 
+# --- Book Metadata Cache (avoid re-parsing OPFs on every /api/books) ---
+BOOKS_META_CACHE = {}
+BOOKS_META_CACHE_LOCK = threading.Lock()
+
+def invalidate_books_meta_cache(book_dir=None):
+    with BOOKS_META_CACHE_LOCK:
+        if book_dir:
+            BOOKS_META_CACHE.pop(book_dir, None)
+        else:
+            BOOKS_META_CACHE.clear()
+
 # --- Upload Task Tracking (for progress / logs) ---
 UPLOAD_TASKS = {}
 UPLOAD_TASKS_LOCK = threading.Lock()
@@ -152,6 +163,7 @@ def _process_upload_task(task_id, filepath, filename, categories):
             book_dir=book_dir_name,
             progress={'phase': 'done', 'current': total, 'total': total},
         )
+        invalidate_books_meta_cache(book_dir_name)
         _task_append_log(task_id, "Import finished.")
 
     except Exception as e:
@@ -498,25 +510,45 @@ def api_books():
     user_meta = load_user_metadata()
     print("Scanning for books...")
     if os.path.exists(LIBRARY_FOLDER):
-        for entry in os.listdir(LIBRARY_FOLDER):
-            full_path = os.path.join(LIBRARY_FOLDER, entry)
-            if os.path.isdir(full_path):
-                # print(f"Checking directory: {entry}")
-                # Check if it looks like a book (has .opf or index.html)
-                # Simplest check: try to get metadata
-                meta = get_book_metadata(entry)
-                if meta:
-                    # print(f"Found book: {meta['title']}")
-                    
-                    # Reset subjects to ignore EPUB metadata as per user request
-                    meta['subjects'] = []
+        book_dirs = [entry for entry in os.listdir(LIBRARY_FOLDER) if is_valid_book_dir(entry)]
+        book_dir_set = set(book_dirs)
 
-                    # Merge user categories
-                    if entry in user_meta and 'categories' in user_meta[entry]:
-                        # Combine and deduplicate
-                        meta['subjects'] = list(set(meta['subjects'] + user_meta[entry]['categories']))
-                    
-                    books.append(meta)
+        # Drop cache entries for removed directories.
+        with BOOKS_META_CACHE_LOCK:
+            for cached_dir in list(BOOKS_META_CACHE.keys()):
+                if cached_dir not in book_dir_set:
+                    BOOKS_META_CACHE.pop(cached_dir, None)
+
+        for entry in book_dirs:
+            with BOOKS_META_CACHE_LOCK:
+                cached_meta = BOOKS_META_CACHE.get(entry)
+
+            if cached_meta is None:
+                meta = get_book_metadata(entry)
+                if not meta:
+                    continue
+
+                # Ignore EPUB-provided subjects; user categories are merged below.
+                meta['subjects'] = []
+                with BOOKS_META_CACHE_LOCK:
+                    BOOKS_META_CACHE.setdefault(entry, meta)
+                    cached_meta = BOOKS_META_CACHE.get(entry)
+
+            if not cached_meta:
+                continue
+
+            meta = dict(cached_meta)
+
+            # Merge user categories
+            categories = None
+            if entry in user_meta:
+                categories = user_meta.get(entry, {}).get('categories')
+            if isinstance(categories, list):
+                meta['subjects'] = list(set(categories))
+            else:
+                meta['subjects'] = []
+
+            books.append(meta)
     return jsonify(books)
 
 @app.route('/api/user-metadata', methods=['GET', 'POST'])
@@ -796,7 +828,9 @@ def api_upload():
                 save_user_metadata(user_meta)
                 log(logs, f"Added categories: {', '.join(categories)}")
 
-            return jsonify({'success': True, 'logs': logs, 'book_dir': os.path.basename(extract_path)})
+            book_dir_name = os.path.basename(extract_path)
+            invalidate_books_meta_cache(book_dir_name)
+            return jsonify({'success': True, 'logs': logs, 'book_dir': book_dir_name})
 
         except Exception as e:
             log(logs, f"Error processing: {e}")
@@ -822,6 +856,7 @@ def api_delete_book(book_dir):
         if book_dir in user_meta:
             user_meta.pop(book_dir, None)
             save_user_metadata(user_meta)
+        invalidate_books_meta_cache(book_dir)
         print(f"Deleted book directory: {full_path}")
         return jsonify({'success': True, 'message': f'Book "{book_dir}" deleted.'}), 200
     except Exception as e:

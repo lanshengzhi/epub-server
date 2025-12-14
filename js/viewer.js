@@ -26,6 +26,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const contentViewer = document.getElementById('content-viewer');
     const scrollWrapper = document.getElementById('content-scroll-wrapper');
     const titleEl = document.getElementById('book-title');
+    const backToLibraryLink = document.getElementById('back-to-library');
     const prevBtn = document.getElementById('prev-chapter');
     const nextBtn = document.getElementById('next-chapter');
     const notesBtn = document.getElementById('notes-btn');
@@ -1338,7 +1339,32 @@ document.addEventListener('DOMContentLoaded', async () => {
         nextBtn.disabled = currentSpineIndex >= spineItems.length - 1;
     }
 
+    function shouldUseHistoryBackToLibrary() {
+        if (window.history.length <= 1) return false;
+        const ref = document.referrer;
+        if (!ref) return false;
+        try {
+            const refUrl = new URL(ref, window.location.href);
+            if (refUrl.origin !== window.location.origin) return false;
+            const path = refUrl.pathname || '';
+            return path === '/' || path.endsWith('/index.html') || path.endsWith('/index');
+        } catch {
+            return false;
+        }
+    }
+
     // --- Event Listeners ---
+    if (backToLibraryLink) {
+        backToLibraryLink.addEventListener('click', (e) => {
+            if (!shouldUseHistoryBackToLibrary()) return;
+            e.preventDefault();
+            try {
+                saveReadingProgress({ updateLastReadAt: true });
+            } catch {}
+            window.history.back();
+        });
+    }
+
     document.getElementById('toggle-sidebar').onclick = () => {
         document.getElementById('sidebar').classList.toggle('open');
     };
