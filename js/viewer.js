@@ -30,6 +30,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     const prevBtn = document.getElementById('prev-chapter');
     const nextBtn = document.getElementById('next-chapter');
     const notesBtn = document.getElementById('notes-btn');
+    const toggleSidebarBtn = document.getElementById('toggle-sidebar');
+    const closeSidebarBtn = document.getElementById('close-sidebar');
+    const closeSidebarBottomBtn = document.getElementById('close-sidebar-bottom');
+    const sidebarBackdrop = document.getElementById('sidebar-backdrop');
     const selectionToolbar = document.getElementById('selection-toolbar');
     const annoMenu = document.getElementById('anno-menu');
     const noteModal = document.getElementById('note-modal');
@@ -62,6 +66,31 @@ document.addEventListener('DOMContentLoaded', async () => {
         toast.classList.add('show');
         if (toastTimer) window.clearTimeout(toastTimer);
         toastTimer = window.setTimeout(() => toast.classList.remove('show'), TOAST_DURATION_MS);
+    }
+
+    const sidebarOverlayQuery = typeof window.matchMedia === 'function'
+        ? window.matchMedia('(max-width: 768px)')
+        : null;
+
+    function isSidebarOverlayMode() {
+        if (sidebarOverlayQuery) return sidebarOverlayQuery.matches;
+        return window.innerWidth <= 768;
+    }
+
+    function setSidebarOpen(isOpen) {
+        if (!sidebar) return;
+        sidebar.classList.toggle('open', isOpen);
+
+        if (toggleSidebarBtn) {
+            toggleSidebarBtn.setAttribute('aria-controls', 'sidebar');
+            toggleSidebarBtn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+        }
+
+        sidebar.setAttribute('aria-hidden', isOpen ? 'false' : 'true');
+
+        if (sidebarBackdrop) {
+            sidebarBackdrop.classList.toggle('open', isOpen && isSidebarOverlayMode());
+        }
     }
 
         // --- Annotations (Highlights / Notes) ---
@@ -759,6 +788,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!target) return;
         e.preventDefault();
         loadChapter(target);
+        if (isSidebarOverlayMode()) setSidebarOpen(false);
     });
     
 	    // State
@@ -1365,13 +1395,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    document.getElementById('toggle-sidebar').onclick = () => {
-        document.getElementById('sidebar').classList.toggle('open');
-    };
-    
-    document.getElementById('close-sidebar').onclick = () => {
-        document.getElementById('sidebar').classList.remove('open');
-    };
+    if (toggleSidebarBtn) {
+        toggleSidebarBtn.addEventListener('click', () => setSidebarOpen(!sidebar.classList.contains('open')));
+    }
+
+    if (closeSidebarBtn) closeSidebarBtn.addEventListener('click', () => setSidebarOpen(false));
+    if (closeSidebarBottomBtn) closeSidebarBottomBtn.addEventListener('click', () => setSidebarOpen(false));
+    if (sidebarBackdrop) sidebarBackdrop.addEventListener('click', () => setSidebarOpen(false));
+
+    setSidebarOpen(!!(sidebar && sidebar.classList.contains('open')));
 
     // Mobile Settings Toggle
     const settingsToggle = document.getElementById('mobile-settings-toggle');
