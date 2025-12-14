@@ -479,7 +479,8 @@ a { text-decoration: none; color: inherit; }
 }
 
 .reader-toolbar-bottom,
-.reader-settings-sheet {
+.reader-settings-sheet,
+.reader-progress-indicator {
     display: none;
 }
 
@@ -567,35 +568,55 @@ a { text-decoration: none; color: inherit; }
         display: none !important;
     }
 
-    /* Header is overlay, so reader container should fill viewport */
-    .reader-container {
-        height: 100vh; /* Fallback */
-        height: 100dvh;
-    }
+	    /* Header is overlay, so reader container should fill viewport */
+	    .reader-container {
+	        height: 100vh; /* Fallback */
+	        height: 100dvh;
+	    }
 
-    /* Safe-area padding for immersive reading */
-    .reader-page .iframe-container {
-        padding-top: env(safe-area-inset-top, 0px);
-        padding-bottom: env(safe-area-inset-bottom, 0px);
-    }
+	    /* Full-bleed immersive reading (no bottom safe-area) */
+	    .reader-page .iframe-container {
+	        padding: 0;
+	        padding-top: env(safe-area-inset-top, 0px);
+	    }
 
-    body.toolbars-visible.reader-page .iframe-container {
-        padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px));
-    }
+	    body.toolbars-visible.reader-page .iframe-container {
+	        padding-bottom: 56px;
+	    }
 
-    .reader-toolbar-bottom {
-        display: flex;
-        position: fixed;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        height: calc(56px + env(safe-area-inset-bottom, 0px));
-        padding: 0 16px env(safe-area-inset-bottom, 0px);
-        background-color: var(--header-bg);
-        border-top: 1px solid var(--border-color);
-        box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.08);
-        justify-content: space-around;
-        align-items: center;
+	    .reader-progress-indicator {
+	        display: block;
+	        position: fixed;
+	        right: calc(14px + env(safe-area-inset-right, 0px));
+	        bottom: 10px;
+	        z-index: 110;
+	        font-size: 12px;
+	        line-height: 1;
+	        color: var(--text-muted);
+	        opacity: 0.78;
+	        pointer-events: none;
+	        user-select: none;
+	        font-variant-numeric: tabular-nums;
+	        transition: opacity 0.2s ease;
+	    }
+
+	    body.toolbars-visible .reader-progress-indicator {
+	        opacity: 0;
+	    }
+
+	    .reader-toolbar-bottom {
+	        display: flex;
+	        position: fixed;
+	        left: 0;
+	        right: 0;
+	        bottom: 0;
+	        height: 56px;
+	        padding: 0 16px;
+	        background-color: var(--header-bg);
+	        border-top: 1px solid var(--border-color);
+	        box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.08);
+	        justify-content: space-around;
+	        align-items: center;
         transform: translateY(110%);
         transition: transform 0.25s ease;
         pointer-events: none;
@@ -625,23 +646,23 @@ a { text-decoration: none; color: inherit; }
         font-size: 20px;
     }
 
-    .reader-settings-sheet {
-        display: block;
-        position: fixed;
-        left: 0;
-        right: 0;
-        bottom: calc(56px + env(safe-area-inset-bottom, 0px));
-        padding: 14px 16px;
-        background-color: var(--card-bg);
-        border-top: 1px solid var(--border-color);
-        border-radius: 16px 16px 0 0;
-        box-shadow: 0 -14px 40px rgba(0, 0, 0, 0.12);
-        transform: translateY(calc(100% + 56px + env(safe-area-inset-bottom, 0px)));
-        opacity: 0;
-        pointer-events: none;
-        transition: transform 0.25s ease, opacity 0.25s ease;
-        z-index: 130;
-    }
+	    .reader-settings-sheet {
+	        display: block;
+	        position: fixed;
+	        left: 0;
+	        right: 0;
+	        bottom: 56px;
+	        padding: 14px 16px;
+	        background-color: var(--card-bg);
+	        border-top: 1px solid var(--border-color);
+	        border-radius: 16px 16px 0 0;
+	        box-shadow: 0 -14px 40px rgba(0, 0, 0, 0.12);
+	        transform: translateY(calc(100% + 56px));
+	        opacity: 0;
+	        pointer-events: none;
+	        transition: transform 0.25s ease, opacity 0.25s ease;
+	        z-index: 130;
+	    }
 
     body.toolbars-visible.settings-open .reader-settings-sheet {
         transform: translateY(0);
@@ -871,7 +892,7 @@ a { text-decoration: none; color: inherit; }
 
     /* No on-screen prev/next on mobile (use swipe) */
     .iframe-container {
-        padding-bottom: calc(20px + env(safe-area-inset-bottom));
+        padding-bottom: 0;
     }
 }
 

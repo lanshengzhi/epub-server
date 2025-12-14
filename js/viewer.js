@@ -46,6 +46,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const sheetMarginDecreaseBtn = document.getElementById('sheet-margin-decrease');
     const sheetLineHeightDecreaseBtn = document.getElementById('sheet-line-height-decrease');
     const sheetLineHeightIncreaseBtn = document.getElementById('sheet-line-height-increase');
+    const progressIndicator = document.getElementById('reader-progress-indicator');
     const selectionToolbar = document.getElementById('selection-toolbar');
     const annoMenu = document.getElementById('anno-menu');
     const noteModal = document.getElementById('note-modal');
@@ -882,6 +883,52 @@ document.addEventListener('DOMContentLoaded', async () => {
 	        if (max <= 0) return 0;
 	        return Math.max(0, Math.min(1, scrollWrapper.scrollTop / max));
 	    }
+
+        function getDisplayScrollPercent() {
+            const max = scrollWrapper.scrollHeight - scrollWrapper.clientHeight;
+            if (max <= 0) return 1;
+            return Math.max(0, Math.min(1, scrollWrapper.scrollTop / max));
+        }
+
+        function getDisplayPageProgress() {
+            const viewportH = scrollWrapper.clientHeight;
+            const scrollH = scrollWrapper.scrollHeight;
+            if (!Number.isFinite(viewportH) || !Number.isFinite(scrollH) || viewportH <= 0 || scrollH <= 0) {
+                return { page: 1, totalPages: 1 };
+            }
+            const totalPages = Math.max(1, Math.ceil(scrollH / viewportH));
+            const page = Math.max(1, Math.min(totalPages, Math.floor(scrollWrapper.scrollTop / viewportH) + 1));
+            return { page, totalPages };
+        }
+
+        function getDisplayBookPercent(chapterPercent) {
+            const total = spineItems.length;
+            if (!Number.isFinite(chapterPercent)) return 0;
+            if (!Number.isFinite(total) || total <= 0) return Math.max(0, Math.min(1, chapterPercent));
+            if (!Number.isFinite(currentSpineIndex) || currentSpineIndex < 0) return Math.max(0, Math.min(1, chapterPercent));
+            const value = (currentSpineIndex + chapterPercent) / total;
+            return Math.max(0, Math.min(1, value));
+        }
+
+        let progressIndicatorRaf = null;
+        function updateProgressIndicator() {
+            if (!progressIndicator || !scrollWrapper) return;
+            if (!isSidebarOverlayMode()) return;
+
+            const { page, totalPages } = getDisplayPageProgress();
+            const chapterPercent = getDisplayScrollPercent();
+            const bookPercent = getDisplayBookPercent(chapterPercent);
+            const pct = Math.round(bookPercent * 100);
+            progressIndicator.textContent = `${page}/${totalPages} · ${pct}%`;
+        }
+
+        function scheduleProgressIndicatorUpdate() {
+            if (!progressIndicator || progressIndicatorRaf) return;
+            progressIndicatorRaf = window.requestAnimationFrame(() => {
+                progressIndicatorRaf = null;
+                updateProgressIndicator();
+            });
+        }
 	
 	    function saveReadingProgress({ updateLastReadAt = true } = {}) {
 	        if (!currentChapterHref) return;
@@ -1389,6 +1436,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             document.documentElement.classList.toggle('dark-mode', isDark);
 	        contentViewer.style.setProperty('--reader-font', getFontStack(currentFontProfile));
             updateThemeColorMeta();
+            scheduleProgressIndicatorUpdate();
 	    }
     
 	    function getFontStack(profile) {
@@ -1912,12 +1960,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 	        touchStartY = null;
 	    }, { passive: true });
 	
-	    // Persist reading position within long chapters
-	    scrollWrapper.addEventListener('scroll', () => scheduleProgressSave(false, { updateLastReadAt: true }), { passive: true });
-	    document.addEventListener('visibilitychange', () => {
-	        if (document.visibilityState === 'hidden') scheduleProgressSave(true, { updateLastReadAt: true });
-	    });
-	    window.addEventListener('beforeunload', () => scheduleProgressSave(true, { updateLastReadAt: true }));
+		    // Persist reading position within long chapters
+		    scrollWrapper.addEventListener('scroll', () => {
+		        scheduleProgressSave(false, { updateLastReadAt: true });
+                scheduleProgressIndicatorUpdate();
+		    }, { passive: true });
+		    document.addEventListener('visibilitychange', () => {
+		        if (document.visibilityState === 'hidden') scheduleProgressSave(true, { updateLastReadAt: true });
+		    });
+		    window.addEventListener('beforeunload', () => scheduleProgressSave(true, { updateLastReadAt: true }));
+            window.addEventListener('resize', () => scheduleProgressIndicatorUpdate());
 
     function handleSwipe(startX, startY, endX, endY) {
         const diffX = endX - startX;
