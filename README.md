@@ -14,8 +14,7 @@ A modern, web-based EPUB reader with a lightweight Python server backend.
 
 ## Getting Started
 
-1.  **Start the Server**:
-    We now use a custom Python server to handle library management and imports.
+1.  **Install Dependencies (venv)**:
     ```bash
     # Create a virtual environment if you haven't already
     python3 -m venv .venv
@@ -25,16 +24,56 @@ A modern, web-based EPUB reader with a lightweight Python server backend.
 
     # Install dependencies (first run)
     pip install -r requirements.txt
-
-    # Run the server
-    python3 server.py
     ```
     If `python3 -m venv .venv` fails because `ensurepip` is unavailable (common on Debian/Ubuntu), install the system venv package (`sudo apt install python3-venv` or the matching version, e.g. `python3.12-venv`), then rerun the `venv` creation step.
 
-2.  **Open the Library**:
+2.  **Start the Server**:
+
+    **Option A: systemd Service (recommended)**:
+
+    Create `/etc/systemd/system/epub-server.service` (adjust `User`, `Group`, and paths for your machine):
+    ```ini
+    [Unit]
+    Description=EPUB Flask Server
+    After=network.target
+
+    [Service]
+    Type=simple
+    User=lansy
+    Group=lansy
+    WorkingDirectory=/home/lansy/epub-server
+    Environment=PYTHONUNBUFFERED=1
+    ExecStart=/home/lansy/epub-server/.venv/bin/python -u server.py
+    Restart=on-failure
+    RestartSec=3
+
+    [Install]
+    WantedBy=multi-user.target
+    ```
+    Enable and start it:
+    ```bash
+    sudo systemctl daemon-reload
+    sudo systemctl enable --now epub-server
+    sudo systemctl status epub-server
+
+    # Later, after updates
+    sudo systemctl restart epub-server
+
+    # View logs
+    sudo journalctl -u epub-server -f
+    ```
+    Note: `WorkingDirectory` is required because `server.py` uses relative paths (e.g. `library/`, `temp_uploads/`).
+
+    **Option B: Run manually (dev)**:
+    ```bash
+    source .venv/bin/activate
+    python3 server.py
+    ```
+
+3.  **Open the Library**:
     Navigate to [http://localhost:8000](http://localhost:8000) in your web browser.
 
-3.  **Read**:
+4.  **Read**:
     Click on a book cover to open the Modern Reader.
 
 ## Project Structure
