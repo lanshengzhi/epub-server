@@ -254,6 +254,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             start,
             end,
             text,
+            context: startBlock.textContent || '',
             chapterTitle: currentChapterTitle
         };
     }
@@ -509,7 +510,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             style: normalizeAnnotationStyle(style),
             text: ctx.text,
             note: note ? String(note) : '',
-            chapterTitle: ctx.chapterTitle
+            chapterTitle: ctx.chapterTitle,
+            context: ctx.context
         });
         annotations.push(created);
         if (created.href === currentChapterHref) applyAnnotationSpan(created, contentViewer);
@@ -553,13 +555,28 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             const title = document.createElement('div');
             title.className = 'note-item-title';
-            title.textContent = anno.chapterTitle || anno.text || '';
+            // Show Chapter Title
+            const chapterTitle = anno.chapterTitle || t('reader.unknown_chapter');
+            title.textContent = chapterTitle;
+
+            const contextEl = document.createElement('div');
+            contextEl.className = 'note-item-context';
+            // Show Context (fallback to selected text if no context)
+            contextEl.textContent = anno.context || anno.text || '';
+            contextEl.style.fontSize = '0.85em';
+            contextEl.style.color = '#666';
+            contextEl.style.marginBottom = '4px';
+            contextEl.style.display = '-webkit-box';
+            contextEl.style.webkitLineClamp = '2';
+            contextEl.style.webkitBoxOrient = 'vertical';
+            contextEl.style.overflow = 'hidden';
 
             const note = document.createElement('div');
             note.className = 'note-item-note';
             note.textContent = String(anno.note || '');
 
             row.appendChild(title);
+            if (contextEl.textContent) row.appendChild(contextEl);
             row.appendChild(note);
             notesList.appendChild(row);
         });
@@ -665,7 +682,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 style: noteModalStyle,
                 text: ctx.text,
                 note,
-                chapterTitle: ctx.chapterTitle
+                chapterTitle: ctx.chapterTitle,
+                context: ctx.context
             });
             annotations.push(created);
             if (created.href === currentChapterHref) applyAnnotationSpan(created, contentViewer);

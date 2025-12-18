@@ -596,6 +596,7 @@ def api_book_annotations(book_dir):
     selected_text = sanitize_text_field(data.get('text'), 2000)
     note = sanitize_text_field(data.get('note'), 8000)
     chapter_title = sanitize_text_field(data.get('chapterTitle'), 300)
+    context = sanitize_text_field(data.get('context'), 2000)
 
     if not isinstance(href, str) or not href.strip():
         return jsonify({'error': 'Missing href'}), 400
@@ -625,6 +626,7 @@ def api_book_annotations(book_dir):
         'text': selected_text or '',
         'note': note or '',
         'chapterTitle': chapter_title or '',
+        'context': context or '',
         'createdAt': now_ms,
         'updatedAt': now_ms,
     }
@@ -681,6 +683,11 @@ def api_book_annotation_item(book_dir, anno_id):
     if 'text' in data:
         selected_text = sanitize_text_field(data.get('text'), 2000)
         annotations[index]['text'] = selected_text or ''
+        updated = True
+
+    if 'context' in data:
+        context_text = sanitize_text_field(data.get('context'), 2000)
+        annotations[index]['context'] = context_text or ''
         updated = True
 
     if not updated:
