@@ -1766,3 +1766,12 @@ ruby {
         animation: none !important;
     }
 }
+
+/* Helper for iOS Selection Menu Suppression */
+span.temp-selection {
+    background-color: rgb(179, 215, 255);
+}
+
+html.dark-mode span.temp-selection {
+    background-color: rgba(69, 142, 247, 0.4);
+}

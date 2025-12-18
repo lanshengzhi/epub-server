@@ -280,18 +280,21 @@ document.addEventListener('DOMContentLoaded', async () => {
         el.style.top = `${top}px`;
     }
 
-    function showSelectionToolbar(context) {
+    function showSelectionToolbar(context, rectOverride = null) {
         if (!selectionToolbar) return;
         selectionContext = context;
 
-        const range = getSelectionRangeInContent();
-        if (!range) {
-            selectionToolbar.classList.remove('show');
-            return;
+        let rect = rectOverride;
+        if (!rect) {
+            const range = getSelectionRangeInContent();
+            if (!range) {
+                selectionToolbar.classList.remove('show');
+                return;
+            }
+            const rects = range.getClientRects();
+            rect = rects && rects.length > 0 ? rects[0] : range.getBoundingClientRect();
         }
 
-        const rects = range.getClientRects();
-        const rect = rects && rects.length > 0 ? rects[0] : range.getBoundingClientRect();
         if (!rect || (rect.width === 0 && rect.height === 0)) {
             selectionToolbar.classList.remove('show');
             return;
@@ -305,6 +308,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         selectionToolbar.classList.remove('show');
         selectionToolbar.setAttribute('aria-hidden', 'true');
         selectionContext = null;
+        removeTempSelection();
     }
 
     function hideAnnoMenu() {
@@ -316,15 +320,58 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     function updateSelectionUI() {
         const ctx = getSelectionContextFromWindow();
-        if (!ctx) {
+        if (!ctx || (ctx.error && ctx.error !== 'multi_block')) {
             hideSelectionToolbar();
             return;
         }
-        if (ctx.error && ctx.error !== 'multi_block') {
-            hideSelectionToolbar();
-            return;
+
+        // Try to apply temporary selection (fake highlight) and clear native selection
+        // This prevents the iOS context menu from appearing.
+        if (!ctx.error) {
+            removeTempSelection();
+            const tempSpan = applyTempSelection(ctx);
+            if (tempSpan) {
+                clearTextSelection();
+                const rect = tempSpan.getBoundingClientRect();
+                showSelectionToolbar(ctx, rect);
+                return;
+            }
         }
+
         showSelectionToolbar(ctx);
+    }
+
+    function removeTempSelection() {
+        if (!contentViewer) return;
+        const spans = Array.from(contentViewer.querySelectorAll('span.temp-selection'));
+        spans.forEach(unwrapElement);
+    }
+
+    function applyTempSelection(ctx) {
+        if (!ctx || !contentViewer) return null;
+        const block = contentViewer.querySelector(`#${CSS.escape(ctx.anchorId)}`);
+        if (!block) return null;
+
+        const start = Number(ctx.start);
+        const end = Number(ctx.end);
+        if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return null;
+
+        // Ensure buildRangeFromOffsets is available (it is hoisted)
+        const range = buildRangeFromOffsets(block, start, end);
+        if (!range || range.collapsed) return null;
+
+        const wrapper = document.createElement('span');
+        wrapper.className = 'temp-selection';
+
+        try {
+            const frag = range.extractContents();
+            wrapper.appendChild(frag);
+            range.insertNode(wrapper);
+            return wrapper;
+        } catch (e) {
+            console.warn('Failed to apply temp selection', e);
+            return null;
+        }
     }
 
     function unwrapElement(el) {
