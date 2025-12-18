@@ -1,8 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title data-i18n="reader.page_title">EPUB Reader</title>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-title" content="EPUB Reader">
@@ -20,20 +22,26 @@
                     (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) ||
                     window.navigator.standalone === true;
                 if (isStandalone) document.documentElement.classList.add('pwa-standalone');
-            } catch {}
+            } catch { }
         })();
     </script>
     <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+        integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg=="
+        crossorigin="anonymous" referrerpolicy="no-referrer" />
     <!-- Highlight.js CSS -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+    <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
 </head>
+
 <body class="reader-page">
 
     <header class="reader-header">
         <div class="header-left">
-            <a id="back-to-library" href="index.html" class="icon-btn" data-i18n-title="reader.back_to_library" title="Back to Library"><i class="fas fa-home"></i></a>
-            <button id="toggle-sidebar" class="icon-btn" data-i18n-title="reader.toggle_sidebar" title="Toggle Sidebar"><i class="fas fa-bars"></i></button>
+            <a id="back-to-library" href="index.html" class="icon-btn" data-i18n-title="reader.back_to_library"
+                title="Back to Library"><i class="fas fa-home"></i></a>
+            <button id="toggle-sidebar" class="icon-btn" data-i18n-title="reader.toggle_sidebar"
+                title="Toggle Sidebar"><i class="fas fa-bars"></i></button>
             <span id="book-title" class="book-title" data-i18n="reader.loading">Loading...</span>
         </div>
         <div class="header-right">
@@ -46,15 +54,21 @@
 
             <div id="reader-settings" class="settings-group">
                 <!-- Font Settings -->
-                <button id="font-decrease" class="icon-btn" data-i18n-title="reader.decrease_font" title="Decrease Font Size"><i class="fas fa-minus"></i></button>
-                <button id="font-increase" class="icon-btn" data-i18n-title="reader.increase_font" title="Increase Font Size"><i class="fas fa-plus"></i></button>
-                <button id="font-change" class="icon-btn" data-i18n-title="reader.change_font" title="Change Font"><i class="fas fa-font"></i></button>
-                
-                <!-- Margin/Width Settings -->
-                <button id="margin-increase" class="icon-btn" data-i18n-title="reader.narrower_text" title="Narrower Text"><i class="fas fa-compress-alt"></i></button>
-                <button id="margin-decrease" class="icon-btn" data-i18n-title="reader.wider_text" title="Wider Text"><i class="fas fa-expand-alt"></i></button>
+                <button id="font-decrease" class="icon-btn" data-i18n-title="reader.decrease_font"
+                    title="Decrease Font Size"><i class="fas fa-minus"></i></button>
+                <button id="font-increase" class="icon-btn" data-i18n-title="reader.increase_font"
+                    title="Increase Font Size"><i class="fas fa-plus"></i></button>
+                <button id="font-change" class="icon-btn" data-i18n-title="reader.change_font" title="Change Font"><i
+                        class="fas fa-font"></i></button>
 
-                <button id="theme-toggle" class="icon-btn" data-i18n-title="reader.toggle_theme" title="Toggle Theme"><i class="fas fa-moon"></i></button>
+                <!-- Margin/Width Settings -->
+                <button id="margin-increase" class="icon-btn" data-i18n-title="reader.narrower_text"
+                    title="Narrower Text"><i class="fas fa-compress-alt"></i></button>
+                <button id="margin-decrease" class="icon-btn" data-i18n-title="reader.wider_text" title="Wider Text"><i
+                        class="fas fa-expand-alt"></i></button>
+
+                <button id="theme-toggle" class="icon-btn" data-i18n-title="reader.toggle_theme" title="Toggle Theme"><i
+                        class="fas fa-moon"></i></button>
             </div>
         </div>
     </header>
@@ -70,7 +84,8 @@
                 <!-- TOC injected here -->
             </div>
             <div class="sidebar-footer">
-                <button id="close-sidebar-bottom" type="button" class="nav-btn sidebar-close-btn" data-i18n-aria-label="common.close" aria-label="Close">
+                <button id="close-sidebar-bottom" type="button" class="nav-btn sidebar-close-btn"
+                    data-i18n-aria-label="common.close" aria-label="Close">
                     <i class="fas fa-times" aria-hidden="true"></i>
                     <span data-i18n="common.close">Close</span>
                 </button>
@@ -83,24 +98,34 @@
             </div>
 
             <div class="reader-controls">
-                <button id="prev-chapter" class="nav-btn" disabled><i class="fas fa-chevron-left"></i> <span data-i18n="reader.prev">Previous</span></button>
-                <button id="next-chapter" class="nav-btn"><span data-i18n="reader.next">Next</span> <i class="fas fa-chevron-right"></i></button>
+                <button id="prev-chapter" class="nav-btn" disabled><i class="fas fa-chevron-left"></i> <span
+                        data-i18n="reader.prev">Previous</span></button>
+                <button id="next-chapter" class="nav-btn"><span data-i18n="reader.next">Next</span> <i
+                        class="fas fa-chevron-right"></i></button>
             </div>
         </div>
     </div>
 
     <!-- Mobile Reader Toolbars (WeChat Read style) -->
     <nav id="reader-toolbar-bottom" class="reader-toolbar-bottom" aria-hidden="true">
-        <button id="toolbar-toc" type="button" class="reader-toolbar-btn" data-i18n-aria-label="reader.toc" aria-label="Table of Contents">
+        <a id="toolbar-home" href="index.html" class="reader-toolbar-btn" data-i18n-aria-label="reader.back_to_library"
+            aria-label="Back to Library">
+            <i class="fas fa-home" aria-hidden="true"></i>
+        </a>
+        <button id="toolbar-toc" type="button" class="reader-toolbar-btn" data-i18n-aria-label="reader.toc"
+            aria-label="Table of Contents">
             <i class="fas fa-list" aria-hidden="true"></i>
         </button>
-        <button id="toolbar-notes" type="button" class="reader-toolbar-btn" data-i18n-aria-label="reader.notes" aria-label="Notes">
+        <button id="toolbar-notes" type="button" class="reader-toolbar-btn" data-i18n-aria-label="reader.notes"
+            aria-label="Notes">
             <i class="fas fa-pen-to-square" aria-hidden="true"></i>
         </button>
-        <button id="toolbar-theme" type="button" class="reader-toolbar-btn" data-i18n-aria-label="reader.toggle_theme" aria-label="Toggle Theme">
+        <button id="toolbar-theme" type="button" class="reader-toolbar-btn" data-i18n-aria-label="reader.toggle_theme"
+            aria-label="Toggle Theme">
             <i class="fas fa-sun" aria-hidden="true"></i>
         </button>
-        <button id="toolbar-typography" type="button" class="reader-toolbar-btn" data-i18n-aria-label="reader.typography" aria-label="Typography">
+        <button id="toolbar-typography" type="button" class="reader-toolbar-btn"
+            data-i18n-aria-label="reader.typography" aria-label="Typography">
             <i class="fas fa-font" aria-hidden="true"></i>
         </button>
     </nav>
@@ -109,21 +134,36 @@
         <div class="settings-sheet-row">
             <div class="settings-sheet-label" data-i18n="reader.font">Font</div>
             <div class="settings-sheet-controls">
-                <button id="sheet-font-decrease" type="button" class="icon-btn" data-i18n-aria-label="reader.decrease_font" aria-label="Decrease Font Size">
+                <button id="sheet-font-decrease" type="button" class="icon-btn"
+                    data-i18n-aria-label="reader.decrease_font" aria-label="Decrease Font Size">
                     <i class="fas fa-minus" aria-hidden="true"></i>
                 </button>
-                <button id="sheet-font-increase" type="button" class="icon-btn" data-i18n-aria-label="reader.increase_font" aria-label="Increase Font Size">
+                <button id="sheet-font-increase" type="button" class="icon-btn"
+                    data-i18n-aria-label="reader.increase_font" aria-label="Increase Font Size">
                     <i class="fas fa-plus" aria-hidden="true"></i>
                 </button>
             </div>
         </div>
         <div class="settings-sheet-row">
+            <div class="settings-sheet-label" data-i18n="reader.font_family">Typeface</div>
+            <div class="settings-sheet-controls btn-group">
+                <button type="button" class="text-btn font-family-btn" data-font="serif"
+                    style="font-family: serif;">Serif</button>
+                <button type="button" class="text-btn font-family-btn" data-font="sans"
+                    style="font-family: sans-serif;">Sans</button>
+                <button type="button" class="text-btn font-family-btn" data-font="mono"
+                    style="font-family: monospace;">Mono</button>
+            </div>
+        </div>
+        <div class="settings-sheet-row">
             <div class="settings-sheet-label" data-i18n="reader.margin">Margin</div>
             <div class="settings-sheet-controls">
-                <button id="sheet-margin-increase" type="button" class="icon-btn" data-i18n-aria-label="reader.narrower_text" aria-label="Narrower Text">
+                <button id="sheet-margin-increase" type="button" class="icon-btn"
+                    data-i18n-aria-label="reader.narrower_text" aria-label="Narrower Text">
                     <i class="fas fa-compress-alt" aria-hidden="true"></i>
                 </button>
-                <button id="sheet-margin-decrease" type="button" class="icon-btn" data-i18n-aria-label="reader.wider_text" aria-label="Wider Text">
+                <button id="sheet-margin-decrease" type="button" class="icon-btn"
+                    data-i18n-aria-label="reader.wider_text" aria-label="Wider Text">
                     <i class="fas fa-expand-alt" aria-hidden="true"></i>
                 </button>
             </div>
@@ -131,10 +171,12 @@
         <div class="settings-sheet-row">
             <div class="settings-sheet-label" data-i18n="reader.line_height">Line Height</div>
             <div class="settings-sheet-controls">
-                <button id="sheet-line-height-decrease" type="button" class="icon-btn" data-i18n-aria-label="reader.decrease_line_height" aria-label="Decrease Line Height">
+                <button id="sheet-line-height-decrease" type="button" class="icon-btn"
+                    data-i18n-aria-label="reader.decrease_line_height" aria-label="Decrease Line Height">
                     <i class="fas fa-minus" aria-hidden="true"></i>
                 </button>
-                <button id="sheet-line-height-increase" type="button" class="icon-btn" data-i18n-aria-label="reader.increase_line_height" aria-label="Increase Line Height">
+                <button id="sheet-line-height-increase" type="button" class="icon-btn"
+                    data-i18n-aria-label="reader.increase_line_height" aria-label="Increase Line Height">
                     <i class="fas fa-plus" aria-hidden="true"></i>
                 </button>
             </div>
@@ -143,10 +185,12 @@
 
     <!-- Selection Toolbar -->
     <div id="selection-toolbar" class="selection-toolbar" role="toolbar" aria-hidden="true">
-        <button type="button" class="sel-btn" data-action="highlight" data-i18n-title="reader.annot_highlight" title="Highlight">
+        <button type="button" class="sel-btn" data-action="highlight" data-i18n-title="reader.annot_highlight"
+            title="Highlight">
             <i class="fas fa-highlighter"></i>
         </button>
-        <button type="button" class="sel-btn" data-action="underline" data-i18n-title="reader.annot_underline" title="Underline">
+        <button type="button" class="sel-btn" data-action="underline" data-i18n-title="reader.annot_underline"
+            title="Underline">
             <i class="fas fa-underline"></i>
         </button>
         <button type="button" class="sel-btn" data-action="copy" data-i18n-title="reader.annot_copy" title="Copy">
@@ -161,7 +205,8 @@
     <div id="anno-menu" class="anno-menu" role="menu" aria-hidden="true">
         <button type="button" class="anno-menu-item" data-action="toggle-style"></button>
         <button type="button" class="anno-menu-item" data-action="edit-note"></button>
-        <button type="button" class="anno-menu-item danger" data-action="delete" data-i18n="reader.annot_delete">Delete</button>
+        <button type="button" class="anno-menu-item danger" data-action="delete"
+            data-i18n="reader.annot_delete">Delete</button>
     </div>
 
     <!-- Note Modal -->
@@ -170,10 +215,13 @@
             <h3 data-i18n="reader.note_title">Thoughts</h3>
             <div id="note-selected-text" class="note-selected-text"></div>
             <div class="note-style-row">
-                <button type="button" id="note-style-bg" class="note-style-btn active" data-style="bg" data-i18n="reader.annot_highlight">Highlight</button>
-                <button type="button" id="note-style-ul" class="note-style-btn" data-style="ul" data-i18n="reader.annot_underline">Underline</button>
+                <button type="button" id="note-style-bg" class="note-style-btn active" data-style="bg"
+                    data-i18n="reader.annot_highlight">Highlight</button>
+                <button type="button" id="note-style-ul" class="note-style-btn" data-style="ul"
+                    data-i18n="reader.annot_underline">Underline</button>
             </div>
-            <textarea id="note-input" class="note-textarea" rows="6" data-i18n-placeholder="reader.note_placeholder" placeholder="Write your thoughts..."></textarea>
+            <textarea id="note-input" class="note-textarea" rows="6" data-i18n-placeholder="reader.note_placeholder"
+                placeholder="Write your thoughts..."></textarea>
             <div class="modal-footer">
                 <button id="note-cancel" class="nav-btn" data-i18n="common.cancel">Cancel</button>
                 <button id="note-save" class="nav-btn primary" data-i18n="common.save">Save</button>
@@ -202,4 +250,5 @@
     <script src="js/viewer.js"></script>
     <div id="toast" aria-live="polite" aria-atomic="true"></div>
 </body>
+
 </html>

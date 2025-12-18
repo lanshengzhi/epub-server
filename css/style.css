@@ -14,9 +14,10 @@
     --pwa-safe-right: 0px;
     --pwa-safe-bottom: 0px;
     --pwa-safe-left: 0px;
-    
+
     /* Code Block Colors (Default Light) */
-    --code-bg: #282c34; /* Atom One Dark bg */
+    --code-bg: #282c34;
+    /* Atom One Dark bg */
     --code-text: #abb2bf;
     --code-font: "Fira Code", "Consolas", "Monaco", "Courier New", monospace;
     --line-num-color: #5c6370;
@@ -60,10 +61,14 @@ body.sepia-mode {
 }
 
 /* Reset & Base */
-* { box-sizing: border-box; }
+* {
+    box-sizing: border-box;
+}
+
 html {
     background-color: var(--bg-color);
 }
+
 body {
     margin: 0;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -80,7 +85,10 @@ button {
     font-size: 1rem;
 }
 
-a { text-decoration: none; color: inherit; }
+a {
+    text-decoration: none;
+    color: inherit;
+}
 
 /* Utilities */
 .icon-btn {
@@ -93,12 +101,14 @@ a { text-decoration: none; color: inherit; }
     width: 40px;
     height: 40px;
 }
+
 .icon-btn:hover {
     background-color: rgba(128, 128, 128, 0.1);
 }
 
 /* Header */
-.app-header, .reader-header {
+.app-header,
+.reader-header {
     height: var(--header-total-height);
     background-color: var(--header-bg);
     border-bottom: 1px solid var(--border-color);
@@ -112,7 +122,8 @@ a { text-decoration: none; color: inherit; }
     z-index: 50;
 }
 
-.header-left, .header-right {
+.header-left,
+.header-right {
     display: flex;
     align-items: center;
     gap: 10px;
@@ -191,7 +202,7 @@ a { text-decoration: none; color: inherit; }
 }
 
 #category-list li:hover {
-    background-color: rgba(0,0,0,0.05);
+    background-color: rgba(0, 0, 0, 0.05);
 }
 
 #category-list li.active {
@@ -200,14 +211,14 @@ a { text-decoration: none; color: inherit; }
 }
 
 #category-list li .count {
-    background: rgba(0,0,0,0.1);
+    background: rgba(0, 0, 0, 0.1);
     padding: 2px 8px;
     border-radius: 10px;
     font-size: 0.8rem;
 }
 
 #category-list li.active .count {
-    background: rgba(255,255,255,0.2);
+    background: rgba(255, 255, 255, 0.2);
     color: white;
 }
 
@@ -220,20 +231,20 @@ a { text-decoration: none; color: inherit; }
     .library-container {
         flex-direction: column;
     }
-    
+
     .library-sidebar {
         width: 100%;
         position: static;
         margin-bottom: 20px;
     }
-    
+
     #category-list {
         display: flex;
         overflow-x: auto;
         gap: 10px;
         padding-bottom: 5px;
     }
-    
+
     #category-list li {
         white-space: nowrap;
         margin-bottom: 0;
@@ -258,7 +269,8 @@ a { text-decoration: none; color: inherit; }
     box-shadow: var(--shadow);
 }
 
-.sort-controls, .view-controls {
+.sort-controls,
+.view-controls {
     display: flex;
     align-items: center;
     gap: 10px;
@@ -463,7 +475,8 @@ a { text-decoration: none; color: inherit; }
 .reader-page {
     min-height: 100svh;
     display: flex;
-    flex-direction: column; /* Main page is column: Header + Body */
+    flex-direction: column;
+    /* Main page is column: Header + Body */
     overflow-y: auto;
     background-color: var(--bg-color);
 }
@@ -509,18 +522,19 @@ a { text-decoration: none; color: inherit; }
     height: 100%;
     background-color: var(--card-bg);
     border-right: 1px solid var(--border-color);
-    
+
     /* Desktop: Push Logic */
     /* We use margin-left to hide it off-screen to the left while keeping it in the flow (sort of) */
     /* Actually, for smoother flex transition, we can toggle margin-left */
-    margin-left: calc(var(--sidebar-width) * -1); 
+    margin-left: calc(var(--sidebar-width) * -1);
     transition: margin-left var(--transition);
-    
+
     flex-shrink: 0;
     z-index: 100;
     display: flex;
     flex-direction: column;
-    position: relative; /* Default relative for desktop docking */
+    position: relative;
+    /* Default relative for desktop docking */
 }
 
 .sidebar.open {
@@ -534,32 +548,14 @@ a { text-decoration: none; color: inherit; }
     position: relative;
     height: 100%;
     overflow: hidden;
-    min-width: 0; /* Critical for flex containers */
+    min-width: 0;
+    /* Critical for flex containers */
 }
 
-	/* Mobile Overlay Override */
-	@media (max-width: 768px) {
+/* Mobile Overlay Override */
+@media (max-width: 768px) {
     .reader-header {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        transform: translateY(-110%);
-        transition: transform 0.25s ease;
-        z-index: 120;
-        height: calc(var(--header-height) + env(safe-area-inset-top, 0px));
-        padding: env(safe-area-inset-top, 0px) calc(20px + env(safe-area-inset-right, 0px)) 0 calc(20px + env(safe-area-inset-left, 0px));
-    }
-
-    body.toolbars-visible .reader-header {
-        transform: translateY(0);
-    }
-
-    /* Mobile top toolbar: HOME only */
-    .reader-header .header-right,
-    .reader-header #toggle-sidebar,
-    .reader-header #book-title {
-        display: none;
+        display: none !important;
     }
 
     /* Disable legacy mobile settings entry (replaced by bottom toolbar) */
@@ -567,16 +563,18 @@ a { text-decoration: none; color: inherit; }
         display: none !important;
     }
 
-	    /* Header is overlay; let container flow with page */
-	    .reader-container {
-	        min-height: calc(100svh - var(--header-total-height));
-	    }
+    /* Header is overlay; let container flow with page */
+    .reader-container {
+        min-height: 100svh;
+        padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px));
+    }
 
-	    .reader-progress-indicator {
-	        display: block;
+    .reader-progress-indicator {
+        display: none !important;
+        /* display: block;
 	        position: fixed;
 	        right: calc(14px + env(safe-area-inset-right, 0px));
-	        bottom: 10px;
+	        bottom: calc(66px + env(safe-area-inset-bottom, 0px));
 	        z-index: 110;
 	        font-size: 12px;
 	        line-height: 1;
@@ -585,36 +583,36 @@ a { text-decoration: none; color: inherit; }
 	        pointer-events: none;
 	        user-select: none;
 	        font-variant-numeric: tabular-nums;
-	        transition: opacity 0.2s ease;
-	    }
+	        transition: opacity 0.2s ease; */
+    }
 
-	    body.toolbars-visible .reader-progress-indicator {
+    /* body.toolbars-visible .reader-progress-indicator {
 	        opacity: 0;
-	    }
+	    } */
 
-	    .reader-toolbar-bottom {
-	        display: flex;
-	        position: fixed;
-	        left: 0;
-	        right: 0;
-	        bottom: 0;
-	        height: calc(56px + env(safe-area-inset-bottom, 0px));
-	        padding: 0 16px env(safe-area-inset-bottom, 0px);
-	        background-color: var(--header-bg);
-	        border-top: 1px solid var(--border-color);
-	        box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.08);
-	        justify-content: space-around;
-	        align-items: center;
-        transform: translateY(110%);
-        transition: transform 0.25s ease;
-        pointer-events: none;
+    .reader-toolbar-bottom {
+        display: flex;
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        height: calc(56px + env(safe-area-inset-bottom, 0px));
+        padding: 0 16px env(safe-area-inset-bottom, 0px);
+        background-color: var(--header-bg);
+        border-top: 1px solid var(--border-color);
+        box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.08);
+        justify-content: space-around;
+        align-items: center;
+        transform: none;
+        /* Always visible */
+        pointer-events: auto;
         z-index: 120;
     }
 
-    body.toolbars-visible .reader-toolbar-bottom {
-        transform: translateY(0);
-        pointer-events: auto;
-    }
+    /* body.toolbars-visible .reader-toolbar-bottom {
+            transform: translateY(0);
+            pointer-events: auto;
+        } */
 
     .reader-toolbar-btn {
         width: 46px;
@@ -634,25 +632,25 @@ a { text-decoration: none; color: inherit; }
         font-size: 20px;
     }
 
-	    .reader-settings-sheet {
-	        display: block;
-	        position: fixed;
-	        left: 0;
-	        right: 0;
-	        bottom: calc(56px + env(safe-area-inset-bottom, 0px));
-	        padding: 14px 16px;
-	        background-color: var(--card-bg);
-	        border-top: 1px solid var(--border-color);
-	        border-radius: 16px 16px 0 0;
-	        box-shadow: 0 -14px 40px rgba(0, 0, 0, 0.12);
-	        transform: translateY(calc(100% + 56px));
-	        opacity: 0;
-	        pointer-events: none;
-	        transition: transform 0.25s ease, opacity 0.25s ease;
-	        z-index: 130;
-	    }
+    .reader-settings-sheet {
+        display: block;
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: calc(56px + env(safe-area-inset-bottom, 0px));
+        padding: 14px 16px;
+        background-color: var(--card-bg);
+        border-top: 1px solid var(--border-color);
+        border-radius: 16px 16px 0 0;
+        box-shadow: 0 -14px 40px rgba(0, 0, 0, 0.12);
+        transform: translateY(calc(100% + 56px));
+        opacity: 0;
+        pointer-events: none;
+        transition: transform 0.25s ease, opacity 0.25s ease;
+        z-index: 130;
+    }
 
-    body.toolbars-visible.settings-open .reader-settings-sheet {
+    body.settings-open .reader-settings-sheet {
         transform: translateY(0);
         opacity: 1;
         pointer-events: auto;
@@ -666,7 +664,7 @@ a { text-decoration: none; color: inherit; }
         padding: 10px 0;
     }
 
-    .settings-sheet-row + .settings-sheet-row {
+    .settings-sheet-row+.settings-sheet-row {
         border-top: 1px solid var(--border-color);
     }
 
@@ -682,16 +680,33 @@ a { text-decoration: none; color: inherit; }
         align-items: center;
     }
 
+    .text-btn {
+        padding: 6px 12px;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        border: 1px solid var(--border-color);
+        background: var(--bg-color);
+        color: var(--text-color);
+        transition: all 0.2s;
+    }
+
+    .text-btn.active {
+        background: var(--primary-color);
+        color: #fff;
+        border-color: var(--primary-color);
+    }
+
     .sidebar {
         position: fixed;
         top: 0;
         left: 0;
-        margin-left: 0; /* Reset desktop push logic */
+        margin-left: 0;
+        /* Reset desktop push logic */
         padding-top: env(safe-area-inset-top, 0px);
         padding-left: env(safe-area-inset-left, 0px);
         transform: translateX(-100%);
         transition: transform var(--transition);
-        box-shadow: 2px 0 10px rgba(0,0,0,0.2);
+        box-shadow: 2px 0 10px rgba(0, 0, 0, 0.2);
     }
 
     .sidebar.open {
@@ -760,7 +775,7 @@ a { text-decoration: none; color: inherit; }
 }
 
 .toc-content a:hover {
-    background-color: rgba(0,0,0,0.05);
+    background-color: rgba(0, 0, 0, 0.05);
 }
 
 .toc-content a.active {
@@ -804,7 +819,9 @@ a { text-decoration: none; color: inherit; }
 
 /* Responsive */
 /* Mobile Utilities */
-.mobile-only { display: none; }
+.mobile-only {
+    display: none;
+}
 
 /* Reader Header Settings Group (Desktop / Default) */
 .settings-group {
@@ -814,43 +831,62 @@ a { text-decoration: none; color: inherit; }
 }
 
 /* Sidebar Close Button Default */
-#close-sidebar { display: none; }
+#close-sidebar {
+    display: none;
+}
 
 @media (max-width: 768px) {
+
     /* Show Actions on Mobile (No Hover) */
     .book-card .delete-btn,
     .book-card .edit-tags-btn {
         opacity: 1 !important;
     }
+
     .book-card .delete-btn {
         background-color: rgba(255, 0, 0, 0.8);
     }
+
     .book-card .edit-tags-btn {
         background-color: rgba(0, 0, 0, 0.6);
     }
-    
+
     /* Sidebar Close (mobile-friendly footer button + backdrop) */
-    #close-sidebar { display: none; }
-    .sidebar-footer { display: block; }
+    #close-sidebar {
+        display: none;
+    }
+
+    .sidebar-footer {
+        display: block;
+    }
+
     .toc-content {
         padding-bottom: calc(15px + 56px + max(12px, env(safe-area-inset-bottom, 0px)));
     }
 }
 
 @media (max-width: 600px) {
-    .header-right { gap: 5px; }
+    .header-right {
+        gap: 5px;
+    }
+
     /* Hide title on very small screens to ensure buttons fit */
-    .book-title { display: none; } 
-    
+    .book-title {
+        display: none;
+    }
+
     .reader-controls {
         display: none;
     }
 
     /* Reader Header Adaptation */
-    .mobile-only { display: flex; }
-    
+    .mobile-only {
+        display: flex;
+    }
+
     .settings-group {
-        display: none; /* Hidden by default on mobile */
+        display: none;
+        /* Hidden by default on mobile */
         position: absolute;
         top: var(--header-total-height);
         right: 0;
@@ -864,16 +900,17 @@ a { text-decoration: none; color: inherit; }
         gap: 15px;
         z-index: 90;
     }
-    
+
     .settings-group.show {
         display: grid;
         grid-template-columns: repeat(3, 1fr);
         gap: 10px;
     }
-    
+
     .settings-group .icon-btn {
         width: 100%;
-        height: 48px; /* Larger touch target */
+        height: 48px;
+        /* Larger touch target */
         border-radius: 8px;
         border: 1px solid var(--border-color);
     }
@@ -887,13 +924,14 @@ a { text-decoration: none; color: inherit; }
     width: 100%;
     height: auto;
     overflow: visible;
-    background-color: var(--bg-color); 
+    background-color: var(--bg-color);
     scroll-behavior: smooth;
     -webkit-overflow-scrolling: touch;
-    
+
     /* Flexbox for centering content-viewer */
     display: flex;
-    justify-content: center; /* Center horizontally */
+    justify-content: center;
+    /* Center horizontally */
     padding: var(--pwa-safe-top) 0 calc(env(safe-area-inset-bottom, 0px) + 40px) 0;
 }
 
@@ -912,12 +950,16 @@ a { text-decoration: none; color: inherit; }
 }
 
 #content-viewer {
-    max-width: 800px; /* Default from JS. Keep this for content width control */
+    max-width: 800px;
+    /* Default from JS. Keep this for content width control */
     /* Remove margin: 0 auto; as flexbox will handle centering */
-    padding: 0 20px; /* Padding for content inside its max-width container */
+    padding: 0 20px;
+    /* Padding for content inside its max-width container */
     line-height: 1.8;
-    font-size: 100%; /* controlled by JS */
-    flex-shrink: 0; /* Don't let it shrink below its intrinsic content size if min-width applied */
+    font-size: 100%;
+    /* controlled by JS */
+    flex-shrink: 0;
+    /* Don't let it shrink below its intrinsic content size if min-width applied */
     font-family: var(--reader-font);
 }
 
@@ -1117,14 +1159,15 @@ a { text-decoration: none; color: inherit; }
 }
 
 /* Content Images Optimization */
-#content-viewer img, 
-#content-viewer svg, 
+#content-viewer img,
+#content-viewer svg,
 #content-viewer image {
     max-width: 100% !important;
     height: auto !important;
     display: block;
     margin: 1em auto;
-    cursor: zoom-in; /* Indicate clickable */
+    cursor: zoom-in;
+    /* Indicate clickable */
     transition: opacity 0.5s ease, filter 0.5s ease;
     filter: blur(0);
     opacity: 1;
@@ -1143,15 +1186,17 @@ a { text-decoration: none; color: inherit; }
 #content-viewer pre {
     background-color: var(--code-bg);
     color: var(--code-text);
-    padding: 15px 15px 15px 50px; /* Left padding for line numbers */
+    padding: 15px 15px 15px 50px;
+    /* Left padding for line numbers */
     border-radius: 8px;
     overflow-x: auto;
     margin: 1.5em 0;
     font-family: var(--code-font);
     font-size: 0.9em;
     line-height: 1.5;
-    box-shadow: inset 0 0 10px rgba(0,0,0,0.2);
-    position: relative; /* For buttons */
+    box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.2);
+    position: relative;
+    /* For buttons */
     /* Custom Scrollbar for Pre */
     scrollbar-width: thin;
     scrollbar-color: #4b5563 var(--code-bg);
@@ -1160,17 +1205,20 @@ a { text-decoration: none; color: inherit; }
 #content-viewer pre.code-wrap {
     white-space: pre-wrap;
     word-break: break-all;
-    padding-left: 15px; /* Reset left padding when wrapped */
+    padding-left: 15px;
+    /* Reset left padding when wrapped */
 }
 
 #content-viewer pre::-webkit-scrollbar {
     height: 8px;
 }
+
 #content-viewer pre::-webkit-scrollbar-track {
     background: var(--code-bg);
     border-bottom-right-radius: 8px;
     border-bottom-left-radius: 8px;
 }
+
 #content-viewer pre::-webkit-scrollbar-thumb {
     background-color: #4b5563;
     border-radius: 4px;
@@ -1178,13 +1226,15 @@ a { text-decoration: none; color: inherit; }
 
 #content-viewer code {
     font-family: var(--code-font);
-    background-color: rgba(128, 128, 128, 0.15); /* Subtle bg for inline code */
+    background-color: rgba(128, 128, 128, 0.15);
+    /* Subtle bg for inline code */
     padding: 2px 5px;
     border-radius: 4px;
 }
 
 #content-viewer pre code {
-    background-color: transparent; /* Remove inline style for block code */
+    background-color: transparent;
+    /* Remove inline style for block code */
     padding: 0;
     color: inherit;
     border-radius: 0;
@@ -1193,16 +1243,18 @@ a { text-decoration: none; color: inherit; }
 /* Line Numbers */
 .line-numbers-rows {
     position: absolute;
-    top: 15px; /* Match pre padding-top */
+    top: 15px;
+    /* Match pre padding-top */
     left: 0;
     width: 40px;
     text-align: right;
     padding-right: 10px;
     color: var(--line-num-color);
-    border-right: 1px solid rgba(255,255,255,0.1);
+    border-right: 1px solid rgba(255, 255, 255, 0.1);
     user-select: none;
     pointer-events: none;
-    line-height: 1.5; /* Match pre line-height */
+    line-height: 1.5;
+    /* Match pre line-height */
     /* Hide when wrapped */
     display: block;
 }
@@ -1269,7 +1321,7 @@ a { text-decoration: none; color: inherit; }
     max-height: 90vh;
     object-fit: contain;
     border-radius: 4px;
-    box-shadow: 0 0 20px rgba(0,0,0,0.5);
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
 }
 
 .lightbox-close {
@@ -1290,21 +1342,23 @@ a { text-decoration: none; color: inherit; }
 
 /* Modal */
 .modal {
-    display: none; 
-    position: fixed; 
-    z-index: 1000; 
+    display: none;
+    position: fixed;
+    z-index: 1000;
     left: 0;
     top: 0;
-    width: 100%; 
-    height: 100%; 
-    overflow: auto; 
-    background-color: rgba(0,0,0,0.5); 
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.5);
     align-items: center;
     justify-content: center;
 }
+
 .modal.show {
     display: flex;
 }
+
 .modal-content {
     background-color: var(--card-bg);
     padding: 20px;
@@ -1317,6 +1371,7 @@ a { text-decoration: none; color: inherit; }
     max-height: 80vh;
     min-width: 0;
 }
+
 .logs-container {
     background: #111;
     color: #0f0;
@@ -1362,14 +1417,16 @@ a { text-decoration: none; color: inherit; }
 
 /* Delete Button for Book Card */
 .book-card {
-    position: relative; /* Needed for absolute positioning of delete-btn */
+    position: relative;
+    /* Needed for absolute positioning of delete-btn */
 }
 
 .delete-btn {
     position: absolute;
     top: 10px;
     right: 10px;
-    background-color: rgba(255, 0, 0, 0.7); /* Red with some transparency */
+    background-color: rgba(255, 0, 0, 0.7);
+    /* Red with some transparency */
     color: white;
     border: none;
     border-radius: 50%;
@@ -1380,13 +1437,16 @@ a { text-decoration: none; color: inherit; }
     justify-content: center;
     font-size: 1.1rem;
     cursor: pointer;
-    opacity: 0; /* Hidden by default */
+    opacity: 0;
+    /* Hidden by default */
     transition: opacity 0.2s, background-color 0.2s;
-    z-index: 10; /* Ensure it's above other elements */
+    z-index: 10;
+    /* Ensure it's above other elements */
 }
 
 .book-card:hover .delete-btn {
-    opacity: 1; /* Show on hover */
+    opacity: 1;
+    /* Show on hover */
 }
 
 .delete-btn:hover {
@@ -1452,7 +1512,8 @@ ruby {
 .edit-tags-btn {
     position: absolute;
     top: 10px;
-    right: 50px; /* Left of delete button */
+    right: 50px;
+    /* Left of delete button */
     background-color: rgba(0, 0, 0, 0.5);
     color: white;
     border: none;
@@ -1556,7 +1617,8 @@ ruby {
 
     transition: all 0.2s;
 
-    width: auto; /* Reset flex adjustments */
+    width: auto;
+    /* Reset flex adjustments */
 
     height: auto;
 
@@ -1625,23 +1687,51 @@ ruby {
 
 /* Page Transition Animations */
 @keyframes slideOutLeft {
-    from { transform: translateX(0); opacity: 1; }
-    to { transform: translateX(-20px); opacity: 0.35; }
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+
+    to {
+        transform: translateX(-20px);
+        opacity: 0.35;
+    }
 }
 
 @keyframes slideInRight {
-    from { transform: translateX(20px); opacity: 0.35; }
-    to { transform: translateX(0); opacity: 1; }
+    from {
+        transform: translateX(20px);
+        opacity: 0.35;
+    }
+
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
 }
 
 @keyframes slideOutRight {
-    from { transform: translateX(0); opacity: 1; }
-    to { transform: translateX(20px); opacity: 0.35; }
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+
+    to {
+        transform: translateX(20px);
+        opacity: 0.35;
+    }
 }
 
 @keyframes slideInLeft {
-    from { transform: translateX(-20px); opacity: 0.35; }
-    to { transform: translateX(0); opacity: 1; }
+    from {
+        transform: translateX(-20px);
+        opacity: 0.35;
+    }
+
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
 }
 
 .slide-out-left,
@@ -1668,6 +1758,7 @@ ruby {
 }
 
 @media (prefers-reduced-motion: reduce) {
+
     .slide-out-left,
     .slide-in-right,
     .slide-out-right,
