@@ -8,6 +8,8 @@
     --header-bg: #ffffff;
     --header-height: 60px;
     --sidebar-width: 300px;
+    --reader-toolbar-height: 56px;
+    --reader-safe-bottom: env(safe-area-inset-bottom, 0px);
     --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
     --transition: 0.3s ease;
     --pwa-safe-top: 0px;
@@ -600,8 +602,8 @@ a {
         left: 0;
         right: 0;
         bottom: 0;
-        height: calc(56px + env(safe-area-inset-bottom, 0px));
-        padding: 0 16px env(safe-area-inset-bottom, 0px);
+        height: calc(var(--reader-toolbar-height) + var(--reader-safe-bottom));
+        padding: 0 16px var(--reader-safe-bottom);
         background-color: var(--header-bg);
         border-top: 1px solid var(--border-color);
         box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.08);
@@ -641,7 +643,7 @@ a {
         position: fixed;
         left: 0;
         right: 0;
-        bottom: calc(56px + env(safe-area-inset-bottom, 0px));
+        bottom: calc(var(--reader-toolbar-height) + var(--reader-safe-bottom));
         padding: 14px 16px;
         background-color: var(--card-bg);
         border-top: 1px solid var(--border-color);
@@ -944,7 +946,8 @@ a {
 
 @media (max-width: 768px) {
     .reader-page .iframe-container {
-        padding: var(--pwa-safe-top) 0 calc(56px + env(safe-area-inset-bottom, 0px)) 0 !important;
+        padding: var(--pwa-safe-top) 0 calc(var(--reader-toolbar-height) + var(--reader-safe-bottom) + 8px) 0 !important;
+        scroll-padding-bottom: calc(var(--reader-toolbar-height) + var(--reader-safe-bottom) + 8px);
         min-height: 100svh;
     }
 }
@@ -952,7 +955,8 @@ a {
 /* When bottom toolbar is visible on mobile, add its height */
 @media (max-width: 768px) {
     body.toolbars-visible.reader-page .iframe-container {
-        padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px));
+        padding-bottom: calc(var(--reader-toolbar-height) + var(--reader-safe-bottom) + 8px);
+        scroll-padding-bottom: calc(var(--reader-toolbar-height) + var(--reader-safe-bottom) + 8px);
     }
 }
 
