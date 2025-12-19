@@ -1257,6 +1257,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             // Swap Content
             contentViewer.innerHTML = doc.body.innerHTML;
+
+            // Ensure scroll is reset immediately for new chapters (prevents retaining old scroll position)
+            if (!anchor && (!options || !options.restore) && scrollWrapper) {
+                scrollWrapper.scrollTop = 0;
+            }
+
             ensureAutoAnchors(contentViewer);
             await renderAnnotationsForChapter(normalizedFilePath, requestId);
 
