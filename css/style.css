@@ -474,10 +474,11 @@ a {
 /* Reader Layout */
 .reader-page {
     min-height: 100svh;
+    height: 100svh;
     display: flex;
     flex-direction: column;
     /* Main page is column: Header + Body */
-    overflow-y: auto;
+    overflow: hidden;
     background-color: var(--bg-color);
 }
 
@@ -486,8 +487,9 @@ a {
     flex-direction: row;
     flex-grow: 1;
     position: relative;
-    min-height: calc(100svh - var(--header-total-height));
-    overflow: visible;
+    height: calc(100svh - var(--header-total-height));
+    min-height: 0;
+    overflow: hidden;
 }
 
 .reader-toolbar-bottom,
@@ -547,6 +549,7 @@ a {
     flex-direction: column;
     position: relative;
     height: 100%;
+    min-height: 0;
     overflow: hidden;
     min-width: 0;
     /* Critical for flex containers */
@@ -565,7 +568,8 @@ a {
 
     /* Header is overlay; let container flow with page */
     .reader-container {
-        min-height: 100svh;
+        height: 100svh;
+        min-height: 0;
         padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px));
     }
 
@@ -727,6 +731,7 @@ a {
 .toc-content {
     flex-grow: 1;
     overflow-y: auto;
+    overscroll-behavior: contain;
     padding: 15px;
 }
 
@@ -922,8 +927,10 @@ a {
     flex-grow: 1;
     position: relative;
     width: 100%;
-    height: auto;
-    overflow: visible;
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
     background-color: var(--bg-color);
     scroll-behavior: smooth;
     -webkit-overflow-scrolling: touch;
