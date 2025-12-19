@@ -2013,6 +2013,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     // --- Touch / Swipe Support ---
     let touchStartX = null;
     let touchStartY = null;
+    let touchStartScrollTop = null;
+    const SWIPE_THRESHOLD_PX = 80;
+    const SWIPE_MAX_VERTICAL_DRIFT_PX = 28;
+    const SWIPE_HORIZONTAL_RATIO = 1.5;
+    const SCROLL_GUARD_PX = 10;
 
     function hasActiveTextSelectionInContent() {
         const sel = typeof window.getSelection === 'function' ? window.getSelection() : null;
@@ -2043,6 +2048,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
         touchStartX = e.changedTouches[0].screenX;
         touchStartY = e.changedTouches[0].screenY;
+        touchStartScrollTop = scrollWrapper ? scrollWrapper.scrollTop : null;
     }, { passive: true });
 
     scrollWrapper.addEventListener('touchend', (e) => {
@@ -2058,13 +2064,26 @@ document.addEventListener('DOMContentLoaded', async () => {
         const touchEndX = e.changedTouches[0].screenX;
         const touchEndY = e.changedTouches[0].screenY;
 
+        // If the user scrolled vertically, avoid treating it as a swipe.
+        if (touchStartScrollTop !== null && scrollWrapper) {
+            const scrollDelta = Math.abs(scrollWrapper.scrollTop - touchStartScrollTop);
+            if (scrollDelta > SCROLL_GUARD_PX) {
+                touchStartX = null;
+                touchStartY = null;
+                touchStartScrollTop = null;
+                return;
+            }
+        }
+
         handleSwipe(touchStartX, touchStartY, touchEndX, touchEndY);
         touchStartX = null;
+        touchStartScrollTop = null;
     }, { passive: true });
 
     scrollWrapper.addEventListener('touchcancel', () => {
         touchStartX = null;
         touchStartY = null;
+        touchStartScrollTop = null;
     }, { passive: true });
 
     // Persist reading position within long chapters
@@ -2081,18 +2100,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     function handleSwipe(startX, startY, endX, endY) {
         const diffX = endX - startX;
         const diffY = endY - startY;
-        const threshold = 50;
+        const absX = Math.abs(diffX);
+        const absY = Math.abs(diffY);
+        const isHorizontal = absX >= absY * SWIPE_HORIZONTAL_RATIO && absY <= SWIPE_MAX_VERTICAL_DRIFT_PX;
 
-        if (Math.abs(diffX) > Math.abs(diffY)) { // Horizontal
-            if (Math.abs(diffX) > threshold) {
-                if (diffX > 0) {
-                    // Swipe Right -> Previous
-                    if (!prevBtn.disabled) prevBtn.click();
-                } else {
-                    // Swipe Left -> Next
-                    if (!nextBtn.disabled) nextBtn.click();
-                }
-            }
+        if (!isHorizontal) return;
+        if (absX <= SWIPE_THRESHOLD_PX) return;
+
+        if (diffX > 0) {
+            // Swipe Right -> Previous
+            if (!prevBtn.disabled) prevBtn.click();
+        } else {
+            // Swipe Left -> Next
+            if (!nextBtn.disabled) nextBtn.click();
         }
     }
 
