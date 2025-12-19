@@ -570,7 +570,7 @@ a {
     .reader-container {
         height: 100svh;
         min-height: 0;
-        padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px));
+        padding-bottom: 0;
     }
 
     .reader-progress-indicator {
@@ -944,7 +944,7 @@ a {
 
 @media (max-width: 768px) {
     .reader-page .iframe-container {
-        padding: var(--pwa-safe-top) 0 calc(env(safe-area-inset-bottom, 0px) + 40px) 0 !important;
+        padding: var(--pwa-safe-top) 0 calc(56px + env(safe-area-inset-bottom, 0px)) 0 !important;
         min-height: 100svh;
     }
 }
