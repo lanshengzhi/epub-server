@@ -1,5 +1,5 @@
 /* eslint-disable no-undef */
-const STATIC_CACHE = 'epub-reader-static-v25';
+const STATIC_CACHE = 'epub-reader-static-v27';
 
 const STATIC_ASSETS = [
   '/',
@@ -21,7 +21,8 @@ self.addEventListener('install', (event) => {
   event.waitUntil(
     caches
       .open(STATIC_CACHE)
-      .then((cache) => cache.addAll(STATIC_ASSETS))
+      // Force a fresh network fetch for core assets (avoid HTTP cache serving stale CSS/JS).
+      .then((cache) => cache.addAll(STATIC_ASSETS.map((asset) => new Request(asset, { cache: 'reload' }))))
       .then(() => self.skipWaiting())
   );
 });

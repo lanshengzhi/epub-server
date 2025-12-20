@@ -62,7 +62,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Config
     const BOOK_KEY = `progress_${bookDir}`;
-    const THEME_KEY = 'theme';
+    const LEGACY_THEME_KEY = 'theme';
     const TOAST_DURATION_MS = 2000;
     const PROGRESS_VERSION = 3;
     const READING_BLOCK_SELECTOR = 'p, li, blockquote, h1, h2, h3, h4, h5, h6, dt, dd';
@@ -907,13 +907,261 @@ document.addEventListener('DOMContentLoaded', async () => {
     let ncxPath = '';
     let tocLoaded = false;
 
-    // Settings State
-    let currentFontSize = parseInt(localStorage.getItem('fontSize')) || 100;
-    let currentTheme = localStorage.getItem('theme') || 'light';
-    let currentMaxWidth = parseInt(localStorage.getItem('maxWidth')) || 800;
-    let currentLineHeight = parseFloat(localStorage.getItem('lineHeight'));
-    if (!Number.isFinite(currentLineHeight)) currentLineHeight = 1.8;
-    let currentFontProfile = localStorage.getItem('fontProfile') || 'serif';
+    // Reader Settings (separate profiles for desktop vs mobile)
+    const READER_SETTINGS_VERSION = 1;
+    const READER_PROFILE_DESKTOP = 'desktop';
+    const READER_PROFILE_MOBILE = 'mobile';
+    const READER_SETTINGS_STORAGE_PREFIX = `readerSettings_v${READER_SETTINGS_VERSION}_`;
+
+    const LEGACY_READER_SETTINGS_KEYS = {
+        fontSize: 'fontSize',
+        maxWidth: 'maxWidth',
+        lineHeight: 'lineHeight',
+        theme: LEGACY_THEME_KEY,
+        fontProfile: 'fontProfile'
+    };
+
+    const READER_FONT_PROFILES = ['serif', 'sans', 'mono'];
+    const READER_THEME_VALUES = ['light', 'dark'];
+
+    const READER_SETTINGS_DEFAULTS = {
+        [READER_PROFILE_DESKTOP]: {
+            fontSize: 100,
+            lineHeight: 1.8,
+            maxWidth: 800,
+            theme: 'light',
+            fontProfile: 'serif'
+        },
+        [READER_PROFILE_MOBILE]: {
+            fontSize: 110,
+            lineHeight: 1.75,
+            maxWidth: 700,
+            theme: 'light',
+            fontProfile: 'serif'
+        }
+    };
+
+    const READER_SETTINGS_LIMITS = {
+        [READER_PROFILE_DESKTOP]: {
+            fontSize: { min: 60, max: 200, step: 10 },
+            lineHeight: { min: 1.2, max: 2.4, step: 0.1 },
+            maxWidth: { min: 420, max: 1400, step: 80 }
+        },
+        [READER_PROFILE_MOBILE]: {
+            fontSize: { min: 70, max: 220, step: 10 },
+            lineHeight: { min: 1.3, max: 2.6, step: 0.1 },
+            maxWidth: { min: 320, max: 900, step: 80 }
+        }
+    };
+
+    function getReaderProfileFromViewport() {
+        return isSidebarOverlayMode() ? READER_PROFILE_MOBILE : READER_PROFILE_DESKTOP;
+    }
+
+    function getReaderSettingsStorageKey(profile) {
+        const normalized = profile === READER_PROFILE_MOBILE ? READER_PROFILE_MOBILE : READER_PROFILE_DESKTOP;
+        return `${READER_SETTINGS_STORAGE_PREFIX}${normalized}`;
+    }
+
+    function safeLocalStorageGet(key) {
+        try {
+            return localStorage.getItem(key);
+        } catch {
+            return null;
+        }
+    }
+
+    function safeLocalStorageSet(key, value) {
+        try {
+            localStorage.setItem(key, value);
+            return true;
+        } catch {
+            return false;
+        }
+    }
+
+    function clampNumber(value, min, max) {
+        const n = Number(value);
+        if (!Number.isFinite(n)) return null;
+        return Math.max(min, Math.min(max, n));
+    }
+
+    function snapToStep(value, step) {
+        const n = Number(value);
+        const s = Number(step);
+        if (!Number.isFinite(n) || !Number.isFinite(s) || s <= 0) return n;
+        return Math.round(n / s) * s;
+    }
+
+    function normalizeTheme(value) {
+        const v = String(value || '').trim().toLowerCase();
+        return v === 'dark' ? 'dark' : 'light';
+    }
+
+    function normalizeFontProfile(value) {
+        const v = String(value || '').trim().toLowerCase();
+        return READER_FONT_PROFILES.includes(v) ? v : 'serif';
+    }
+
+    function normalizeReaderSettings(raw, profile) {
+        const p = profile === READER_PROFILE_MOBILE ? READER_PROFILE_MOBILE : READER_PROFILE_DESKTOP;
+        const defaults = READER_SETTINGS_DEFAULTS[p];
+        const limits = READER_SETTINGS_LIMITS[p];
+
+        const next = {
+            fontSize: defaults.fontSize,
+            lineHeight: defaults.lineHeight,
+            maxWidth: defaults.maxWidth,
+            theme: defaults.theme,
+            fontProfile: defaults.fontProfile
+        };
+
+        if (raw && typeof raw === 'object') {
+            const fs = clampNumber(raw.fontSize, limits.fontSize.min, limits.fontSize.max);
+            if (fs !== null) next.fontSize = snapToStep(fs, limits.fontSize.step);
+
+            const lh = clampNumber(raw.lineHeight, limits.lineHeight.min, limits.lineHeight.max);
+            if (lh !== null) {
+                const snapped = snapToStep(lh, limits.lineHeight.step);
+                next.lineHeight = Math.round(snapped * 100) / 100;
+            }
+
+            const mw = clampNumber(raw.maxWidth, limits.maxWidth.min, limits.maxWidth.max);
+            if (mw !== null) next.maxWidth = snapToStep(mw, limits.maxWidth.step);
+
+            if (raw.theme !== undefined) next.theme = normalizeTheme(raw.theme);
+            if (raw.fontProfile !== undefined) next.fontProfile = normalizeFontProfile(raw.fontProfile);
+        }
+
+        next.fontSize = Math.round(Number(next.fontSize));
+        next.maxWidth = Math.round(Number(next.maxWidth));
+        if (!Number.isFinite(next.lineHeight)) next.lineHeight = defaults.lineHeight;
+
+        next.fontSize = Math.max(limits.fontSize.min, Math.min(limits.fontSize.max, next.fontSize));
+        next.maxWidth = Math.max(limits.maxWidth.min, Math.min(limits.maxWidth.max, next.maxWidth));
+        next.lineHeight = Math.max(limits.lineHeight.min, Math.min(limits.lineHeight.max, Number(next.lineHeight)));
+
+        next.theme = READER_THEME_VALUES.includes(next.theme) ? next.theme : defaults.theme;
+        next.fontProfile = READER_FONT_PROFILES.includes(next.fontProfile) ? next.fontProfile : defaults.fontProfile;
+
+        return next;
+    }
+
+    function readLegacyReaderSettings() {
+        const legacy = {};
+        let found = false;
+
+        const fsRaw = safeLocalStorageGet(LEGACY_READER_SETTINGS_KEYS.fontSize);
+        if (fsRaw != null) {
+            const n = parseInt(fsRaw, 10);
+            if (Number.isFinite(n)) legacy.fontSize = n;
+            found = true;
+        }
+
+        const mwRaw = safeLocalStorageGet(LEGACY_READER_SETTINGS_KEYS.maxWidth);
+        if (mwRaw != null) {
+            const n = parseInt(mwRaw, 10);
+            if (Number.isFinite(n)) legacy.maxWidth = n;
+            found = true;
+        }
+
+        const lhRaw = safeLocalStorageGet(LEGACY_READER_SETTINGS_KEYS.lineHeight);
+        if (lhRaw != null) {
+            const n = parseFloat(lhRaw);
+            if (Number.isFinite(n)) legacy.lineHeight = n;
+            found = true;
+        }
+
+        const themeRaw = safeLocalStorageGet(LEGACY_READER_SETTINGS_KEYS.theme);
+        if (themeRaw != null) {
+            legacy.theme = themeRaw;
+            found = true;
+        }
+
+        const fpRaw = safeLocalStorageGet(LEGACY_READER_SETTINGS_KEYS.fontProfile);
+        if (fpRaw != null) {
+            legacy.fontProfile = fpRaw;
+            found = true;
+        }
+
+        return found ? legacy : null;
+    }
+
+    function readReaderSettings(profile) {
+        const key = getReaderSettingsStorageKey(profile);
+        const raw = safeLocalStorageGet(key);
+        if (!raw) return normalizeReaderSettings(null, profile);
+        try {
+            const parsed = JSON.parse(raw);
+            return normalizeReaderSettings(parsed, profile);
+        } catch {
+            return normalizeReaderSettings(null, profile);
+        }
+    }
+
+    function writeReaderSettings(profile, patch) {
+        const current = readReaderSettings(profile);
+        const merged = Object.assign({}, current, (patch && typeof patch === 'object') ? patch : {});
+        const normalized = normalizeReaderSettings(merged, profile);
+        safeLocalStorageSet(getReaderSettingsStorageKey(profile), JSON.stringify(normalized));
+        return normalized;
+    }
+
+    function ensureReaderSettingsProfiles() {
+        const desktopKey = getReaderSettingsStorageKey(READER_PROFILE_DESKTOP);
+        const mobileKey = getReaderSettingsStorageKey(READER_PROFILE_MOBILE);
+
+        const hasDesktop = !!safeLocalStorageGet(desktopKey);
+        const hasMobile = !!safeLocalStorageGet(mobileKey);
+        if (hasDesktop && hasMobile) return;
+
+        const legacy = readLegacyReaderSettings();
+
+        if (!hasDesktop) {
+            const base = Object.assign({}, READER_SETTINGS_DEFAULTS[READER_PROFILE_DESKTOP], legacy || {});
+            safeLocalStorageSet(desktopKey, JSON.stringify(normalizeReaderSettings(base, READER_PROFILE_DESKTOP)));
+        }
+
+        if (!hasMobile) {
+            let base = Object.assign({}, READER_SETTINGS_DEFAULTS[READER_PROFILE_MOBILE], legacy || {});
+            if (!legacy && hasDesktop) {
+                base = Object.assign({}, READER_SETTINGS_DEFAULTS[READER_PROFILE_MOBILE], readReaderSettings(READER_PROFILE_DESKTOP));
+            }
+            safeLocalStorageSet(mobileKey, JSON.stringify(normalizeReaderSettings(base, READER_PROFILE_MOBILE)));
+        }
+    }
+
+    function loadSettingsForProfile(profile) {
+        ensureReaderSettingsProfiles();
+        const settings = readReaderSettings(profile);
+        currentFontSize = settings.fontSize;
+        currentTheme = settings.theme;
+        currentMaxWidth = settings.maxWidth;
+        currentLineHeight = settings.lineHeight;
+        currentFontProfile = settings.fontProfile;
+        return settings;
+    }
+
+    function persistSettingsForCurrentProfile(patch) {
+        const settings = writeReaderSettings(currentReaderProfile, patch);
+        currentFontSize = settings.fontSize;
+        currentTheme = settings.theme;
+        currentMaxWidth = settings.maxWidth;
+        currentLineHeight = settings.lineHeight;
+        currentFontProfile = settings.fontProfile;
+        return settings;
+    }
+
+    let currentReaderProfile = getReaderProfileFromViewport();
+
+    // Settings State (derived from current profile)
+    let currentFontSize = READER_SETTINGS_DEFAULTS[currentReaderProfile].fontSize;
+    let currentTheme = READER_SETTINGS_DEFAULTS[currentReaderProfile].theme;
+    let currentMaxWidth = READER_SETTINGS_DEFAULTS[currentReaderProfile].maxWidth;
+    let currentLineHeight = READER_SETTINGS_DEFAULTS[currentReaderProfile].lineHeight;
+    let currentFontProfile = READER_SETTINGS_DEFAULTS[currentReaderProfile].fontProfile;
+
+    loadSettingsForProfile(currentReaderProfile);
     let loadChapterRequestId = 0;
     let transitionCleanupTimer = null;
     let progressSaveTimer = null;
@@ -1006,6 +1254,113 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
         progressSaveTimer = window.setTimeout(() => saveReadingProgress({ updateLastReadAt }), 250);
+    }
+
+    function withInstantScrollWrapper(fn) {
+        if (!scrollWrapper) return;
+        const prev = scrollWrapper.style.getPropertyValue('scroll-behavior');
+        const prevPriority = scrollWrapper.style.getPropertyPriority('scroll-behavior');
+        scrollWrapper.style.setProperty('scroll-behavior', 'auto', 'important');
+        try {
+            fn();
+        } finally {
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    if (prev) scrollWrapper.style.setProperty('scroll-behavior', prev, prevPriority || '');
+                    else scrollWrapper.style.removeProperty('scroll-behavior');
+                });
+            });
+        }
+    }
+
+    function restoreScrollWrapper(fn) {
+        isRestoringScrollPosition = true;
+        try {
+            fn();
+        } finally {
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    isRestoringScrollPosition = false;
+                    scheduleProgressSave(true, { updateLastReadAt: false });
+                });
+            });
+        }
+    }
+
+    function jumpScrollWrapperToPercent(percent) {
+        if (!scrollWrapper) return;
+        const clamped = Math.max(0, Math.min(1, Number(percent)));
+        const max = scrollWrapper.scrollHeight - scrollWrapper.clientHeight;
+        const target = max > 0 ? clamped * max : 0;
+        if (typeof scrollWrapper.scrollTo === 'function') scrollWrapper.scrollTo(0, target);
+        else scrollWrapper.scrollTop = target;
+    }
+
+    function captureReadingPositionSnapshot() {
+        return {
+            anchorId: getReadingAnchorId(),
+            percent: getScrollPercent()
+        };
+    }
+
+    function restoreReadingPositionSnapshot(snapshot) {
+        if (!snapshot || !scrollWrapper) return;
+        const anchorId = snapshot.anchorId;
+        const percent = (typeof snapshot.percent === 'number' && Number.isFinite(snapshot.percent)) ? snapshot.percent : 0;
+
+        restoreScrollWrapper(() => {
+            withInstantScrollWrapper(() => {
+                if (anchorId) {
+                    const targetEl = document.getElementById(anchorId);
+                    if (targetEl) {
+                        try {
+                            targetEl.scrollIntoView({ block: 'start' });
+                        } catch {
+                            targetEl.scrollIntoView();
+                        }
+                        return;
+                    }
+                }
+                jumpScrollWrapperToPercent(percent);
+            });
+        });
+    }
+
+    let readerProfileSwitchRaf = null;
+    function maybeSwitchReaderProfile() {
+        if (readerProfileSwitchRaf) return;
+        readerProfileSwitchRaf = window.requestAnimationFrame(() => {
+            readerProfileSwitchRaf = null;
+            const nextProfile = getReaderProfileFromViewport();
+            if (nextProfile === currentReaderProfile) return;
+
+            const snapshot = captureReadingPositionSnapshot();
+
+            currentReaderProfile = nextProfile;
+            loadSettingsForProfile(currentReaderProfile);
+
+            // Ensure mode-specific UI is not stuck open across breakpoint changes.
+            setSettingsOpen(false);
+            setToolbarsVisible(false);
+            setSidebarOpen(false);
+
+            applySettings();
+            updateThemeIcons();
+
+            if (!currentChapterHref) return;
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => restoreReadingPositionSnapshot(snapshot));
+            });
+        });
+    }
+
+    if (sidebarOverlayQuery) {
+        const onSidebarOverlayQueryChange = () => maybeSwitchReaderProfile();
+        if (typeof sidebarOverlayQuery.addEventListener === 'function') {
+            sidebarOverlayQuery.addEventListener('change', onSidebarOverlayQueryChange);
+        } else if (typeof sidebarOverlayQuery.addListener === 'function') {
+            sidebarOverlayQuery.addListener(onSidebarOverlayQueryChange);
+        }
     }
 
     function updateFontChangeTitle() {
@@ -1485,17 +1840,32 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function applySettings() {
-        // Prevent "Wider Text" from becoming too wide on touch devices.
-        const isTouchDevice = typeof window.matchMedia === 'function' && window.matchMedia('(pointer: coarse)').matches;
-        const maxWidthCap = isTouchDevice ? 900 : Number.POSITIVE_INFINITY;
-        if (currentMaxWidth > maxWidthCap) {
-            currentMaxWidth = maxWidthCap;
-            localStorage.setItem('maxWidth', currentMaxWidth);
-        }
+        const normalized = normalizeReaderSettings({
+            fontSize: currentFontSize,
+            lineHeight: currentLineHeight,
+            maxWidth: currentMaxWidth,
+            theme: currentTheme,
+            fontProfile: currentFontProfile
+        }, currentReaderProfile);
+
+        currentFontSize = normalized.fontSize;
+        currentLineHeight = normalized.lineHeight;
+        currentMaxWidth = normalized.maxWidth;
+        currentTheme = normalized.theme;
+        currentFontProfile = normalized.fontProfile;
 
         contentViewer.style.fontSize = `${currentFontSize}%`;
         contentViewer.style.lineHeight = String(currentLineHeight);
-        contentViewer.style.maxWidth = `${currentMaxWidth}px`;
+
+        const containerW = scrollWrapper
+            ? scrollWrapper.clientWidth
+            : (window.innerWidth || document.documentElement.clientWidth || 0);
+        let appliedMaxWidth = currentMaxWidth;
+        if (Number.isFinite(containerW) && containerW > 0) {
+            appliedMaxWidth = Math.min(appliedMaxWidth, containerW);
+        }
+        contentViewer.style.maxWidth = `${appliedMaxWidth}px`;
+
         const isDark = currentTheme === 'dark';
         document.body.classList.toggle('dark-mode', isDark);
         document.documentElement.classList.toggle('dark-mode', isDark);
@@ -1711,27 +2081,33 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function toggleTheme() {
-        currentTheme = currentTheme === 'light' ? 'dark' : 'light';
-        localStorage.setItem(THEME_KEY, currentTheme);
+        const next = currentTheme === 'dark' ? 'light' : 'dark';
+        persistSettingsForCurrentProfile({ theme: next });
         applySettings();
         updateThemeIcons();
     }
 
+    function getCurrentReaderLimits() {
+        const profile = currentReaderProfile === READER_PROFILE_MOBILE ? READER_PROFILE_MOBILE : READER_PROFILE_DESKTOP;
+        return READER_SETTINGS_LIMITS[profile];
+    }
+
     const FONT_SIZE_STEP = 10;
     function adjustFontSize(delta) {
-        const next = Math.max(50, currentFontSize + delta);
-        currentFontSize = next;
-        localStorage.setItem('fontSize', currentFontSize);
+        const limits = getCurrentReaderLimits().fontSize;
+        const next = clampNumber(currentFontSize + delta, limits.min, limits.max);
+        if (next === null) return;
+        persistSettingsForCurrentProfile({ fontSize: snapToStep(next, limits.step) });
         applySettings();
     }
 
-    const LINE_HEIGHT_MIN = 1.2;
-    const LINE_HEIGHT_MAX = 2.4;
     const LINE_HEIGHT_STEP = 0.1;
     function adjustLineHeight(delta) {
-        const next = Math.max(LINE_HEIGHT_MIN, Math.min(LINE_HEIGHT_MAX, currentLineHeight + delta));
-        currentLineHeight = Math.round(next * 100) / 100;
-        localStorage.setItem('lineHeight', String(currentLineHeight));
+        const limits = getCurrentReaderLimits().lineHeight;
+        const next = clampNumber(currentLineHeight + delta, limits.min, limits.max);
+        if (next === null) return;
+        const snapped = snapToStep(next, limits.step);
+        persistSettingsForCurrentProfile({ lineHeight: Math.round(snapped * 100) / 100 });
         applySettings();
     }
 
@@ -1749,14 +2125,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const fontDecreaseBtn = document.getElementById('font-decrease');
     if (fontDecreaseBtn) fontDecreaseBtn.addEventListener('click', () => adjustFontSize(-FONT_SIZE_STEP));
 
-    const MIN_MAX_WIDTH = 420;
-    const MAX_MAX_WIDTH = 1400;
-    const TOUCH_MAX_MAX_WIDTH = 900;
     const WIDTH_STEP = 80;
-    function getMaxWidthCap() {
-        const isTouchDevice = typeof window.matchMedia === 'function' && window.matchMedia('(pointer: coarse)').matches;
-        return isTouchDevice ? TOUCH_MAX_MAX_WIDTH : MAX_MAX_WIDTH;
-    }
 
     const marginIncreaseBtn = document.getElementById('margin-increase');
     if (marginIncreaseBtn) {
@@ -1769,8 +2138,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function adjustMaxWidth(delta) {
-        currentMaxWidth = Math.max(MIN_MAX_WIDTH, Math.min(getMaxWidthCap(), currentMaxWidth + delta));
-        localStorage.setItem('maxWidth', currentMaxWidth);
+        const limits = getCurrentReaderLimits().maxWidth;
+        const next = clampNumber(currentMaxWidth + delta, limits.min, limits.max);
+        if (next === null) return;
+        persistSettingsForCurrentProfile({ maxWidth: snapToStep(next, limits.step) });
         showToast(t('reader.width_toast', { px: currentMaxWidth }));
         applySettings();
     }
@@ -1796,15 +2167,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    const fontProfiles = ['serif', 'sans', 'mono'];
-
     // Handle Setting Sheet Font Buttons
     document.querySelectorAll('.font-family-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             const profile = btn.dataset.font;
-            if (fontProfiles.includes(profile)) {
-                currentFontProfile = profile;
-                localStorage.setItem('fontProfile', currentFontProfile);
+            if (READER_FONT_PROFILES.includes(profile)) {
+                persistSettingsForCurrentProfile({ fontProfile: profile });
                 applySettings();
             }
         });
@@ -1813,10 +2181,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     const fontChangeBtn = document.getElementById('font-change');
     if (fontChangeBtn) {
         fontChangeBtn.onclick = () => {
-            const currentIndex = fontProfiles.indexOf(currentFontProfile);
-            const nextIndex = currentIndex === -1 ? 0 : (currentIndex + 1) % fontProfiles.length;
-            currentFontProfile = fontProfiles[nextIndex];
-            localStorage.setItem('fontProfile', currentFontProfile);
+            const currentIndex = READER_FONT_PROFILES.indexOf(currentFontProfile);
+            const nextIndex = currentIndex === -1 ? 0 : (currentIndex + 1) % READER_FONT_PROFILES.length;
+            const nextProfile = READER_FONT_PROFILES[nextIndex] || 'serif';
+            persistSettingsForCurrentProfile({ fontProfile: nextProfile });
             // updateFontChangeTitle(); // Deprecated in favor of sheet buttons
             showToast(t('reader.font_toast', { profile: currentFontProfile }));
             applySettings();
@@ -2101,7 +2469,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (document.visibilityState === 'hidden') scheduleProgressSave(true, { updateLastReadAt: true });
     });
     window.addEventListener('beforeunload', () => scheduleProgressSave(true, { updateLastReadAt: true }));
-    window.addEventListener('resize', () => scheduleProgressIndicatorUpdate());
+    window.addEventListener('resize', () => {
+        scheduleProgressIndicatorUpdate();
+        maybeSwitchReaderProfile();
+    });
 
     function handleSwipe(startX, startY, endX, endY) {
         const diffX = endX - startX;

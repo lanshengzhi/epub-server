@@ -8,7 +8,8 @@
     --header-bg: #ffffff;
     --header-height: 60px;
     --sidebar-width: 300px;
-    --reader-toolbar-height: 56px;
+    /* iOS-like tab bar base height (safe-area bottom is added separately). */
+    --reader-toolbar-height: 49px;
     --reader-safe-bottom: env(safe-area-inset-bottom, 0px);
     --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
     --transition: 0.3s ease;
@@ -602,12 +603,13 @@ a {
         left: 0;
         right: 0;
         bottom: 0;
-        height: calc(var(--reader-toolbar-height) + var(--reader-safe-bottom));
-        padding: 0 16px var(--reader-safe-bottom);
+        /* Match native iOS tab bar: background reaches Home Indicator area, icons stay in base height. */
+        height: calc(var(--reader-toolbar-height) + env(safe-area-inset-bottom, 0px));
+        padding: 0 16px env(safe-area-inset-bottom, 0px);
         background-color: var(--header-bg);
         border-top: 1px solid var(--border-color);
-        box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.08);
-        justify-content: space-around;
+        box-shadow: 0 -6px 18px rgba(0, 0, 0, 0.06);
+        justify-content: space-evenly;
         align-items: center;
         transform: none;
         /* Always visible */
@@ -621,8 +623,8 @@ a {
         } */
 
     .reader-toolbar-btn {
-        width: 46px;
-        height: 46px;
+        width: 44px;
+        height: 44px;
         border-radius: 14px;
         display: flex;
         align-items: center;
@@ -635,7 +637,7 @@ a {
     }
 
     .reader-toolbar-btn i {
-        font-size: 20px;
+        font-size: 22px;
     }
 
     .reader-settings-sheet {
@@ -643,13 +645,13 @@ a {
         position: fixed;
         left: 0;
         right: 0;
-        bottom: calc(var(--reader-toolbar-height) + var(--reader-safe-bottom));
+        bottom: calc(var(--reader-toolbar-height) + env(safe-area-inset-bottom, 0px));
         padding: 14px 16px;
         background-color: var(--card-bg);
         border-top: 1px solid var(--border-color);
         border-radius: 16px 16px 0 0;
         box-shadow: 0 -14px 40px rgba(0, 0, 0, 0.12);
-        transform: translateY(calc(100% + 56px));
+        transform: translateY(calc(100% + var(--reader-toolbar-height)));
         opacity: 0;
         pointer-events: none;
         transition: transform 0.25s ease, opacity 0.25s ease;
@@ -868,7 +870,7 @@ a {
     }
 
     .toc-content {
-        padding-bottom: calc(15px + 56px + max(12px, env(safe-area-inset-bottom, 0px)));
+        padding-bottom: calc(15px + var(--reader-toolbar-height) + max(12px, env(safe-area-inset-bottom, 0px)));
     }
 }
 
@@ -969,8 +971,9 @@ a {
     line-height: 1.8;
     font-size: 100%;
     /* controlled by JS */
-    flex-shrink: 0;
-    /* Don't let it shrink below its intrinsic content size if min-width applied */
+    width: 100%;
+    min-width: 0;
+    flex-shrink: 1;
     font-family: var(--reader-font);
 }
 
