@@ -1,5 +1,5 @@
 /* eslint-disable no-undef */
-const STATIC_CACHE = 'epub-reader-static-v27';
+const STATIC_CACHE = 'epub-reader-static-v28';
 
 const STATIC_ASSETS = [
   '/',
@@ -14,7 +14,17 @@ const STATIC_ASSETS = [
   '/icons/icon-192.png',
   '/icons/icon-512.png',
   '/icons/maskable-512.png',
-  '/icons/apple-touch-icon.png'
+  '/icons/apple-touch-icon.png',
+  // Vendor resources (localized)
+  '/css/libs/fontawesome/all.min.css',
+  '/css/libs/fontawesome/webfonts/fa-solid-900.woff2',
+  '/css/libs/fontawesome/webfonts/fa-solid-900.ttf',
+  '/css/libs/fontawesome/webfonts/fa-brands-400.woff2',
+  '/css/libs/fontawesome/webfonts/fa-brands-400.ttf',
+  '/css/libs/fontawesome/webfonts/fa-regular-400.woff2',
+  '/css/libs/fontawesome/webfonts/fa-regular-400.ttf',
+  '/css/libs/atom-one-dark.min.css',
+  '/js/libs/highlight.min.js'
 ];
 
 self.addEventListener('install', (event) => {
