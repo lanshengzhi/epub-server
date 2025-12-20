@@ -25,8 +25,6 @@
     --code-font: "Fira Code", "Consolas", "Monaco", "Courier New", monospace;
 
     /* Reader Annotations */
-    --anno-bg-color: rgba(250, 204, 21, 0.35);
-    --anno-underline-color: rgba(245, 158, 11, 0.95);
 }
 
 html.pwa-standalone {
@@ -48,8 +46,6 @@ body.dark-mode {
     --text-muted: #9ca3af;
     --border-color: #374151;
     --header-bg: #1f2937;
-    --anno-bg-color: rgba(250, 204, 21, 0.22);
-    --anno-underline-color: rgba(251, 191, 36, 0.95);
 }
 
 /* Reset & Base */
@@ -836,180 +832,7 @@ a {
     font-family: var(--reader-font) !important;
 }
 
-/* Reader Annotations */
-#content-viewer .anno {
-    cursor: pointer;
-}
 
-#content-viewer .anno-bg {
-    background-color: var(--anno-bg-color);
-    border-radius: 4px;
-}
-
-#content-viewer .anno-ul {
-    text-decoration: underline;
-    text-decoration-color: var(--anno-underline-color);
-    text-decoration-thickness: 2px;
-    text-underline-offset: 2px;
-}
-
-#content-viewer .anno-has-note {
-    box-shadow: inset 0 -1px 0 rgba(59, 130, 246, 0.55);
-}
-
-.selection-toolbar {
-    position: fixed;
-    z-index: 2600;
-    display: none;
-    gap: 8px;
-    padding: 8px;
-    background: var(--card-bg);
-    border: 1px solid var(--border-color);
-    border-radius: 14px;
-    box-shadow: var(--shadow);
-}
-
-.selection-toolbar.show {
-    display: flex;
-}
-
-.selection-toolbar .sel-btn {
-    width: 40px;
-    height: 40px;
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background-color 0.2s;
-}
-
-.selection-toolbar .sel-btn:hover {
-    background-color: rgba(128, 128, 128, 0.12);
-}
-
-.anno-menu {
-    position: fixed;
-    z-index: 2600;
-    display: none;
-    flex-direction: column;
-    gap: 6px;
-    padding: 8px;
-    min-width: min(240px, calc(100vw - 24px));
-    background: var(--card-bg);
-    border: 1px solid var(--border-color);
-    border-radius: 14px;
-    box-shadow: var(--shadow);
-}
-
-.anno-menu.show {
-    display: flex;
-}
-
-.anno-menu-item {
-    width: 100%;
-    text-align: left;
-    padding: 10px 12px;
-    border-radius: 10px;
-    transition: background-color 0.2s;
-    font-size: 0.95rem;
-}
-
-.anno-menu-item:hover {
-    background-color: rgba(128, 128, 128, 0.12);
-}
-
-.anno-menu-item.danger {
-    color: #ef4444;
-}
-
-.note-selected-text {
-    padding: 10px 12px;
-    border: 1px solid var(--border-color);
-    border-radius: 10px;
-    background: var(--bg-color);
-    color: var(--text-muted);
-    font-size: 0.9rem;
-    margin-bottom: 12px;
-    max-height: 120px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.note-style-row {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 12px;
-}
-
-.note-style-btn {
-    border: 1px solid var(--border-color);
-    padding: 8px 12px;
-    border-radius: 10px;
-    background: var(--bg-color);
-    font-size: 0.95rem;
-}
-
-.note-style-btn.active {
-    border-color: rgba(59, 130, 246, 0.55);
-    background: rgba(59, 130, 246, 0.08);
-}
-
-.note-textarea {
-    width: 100%;
-    resize: vertical;
-    min-height: 140px;
-    padding: 10px 12px;
-    border: 1px solid var(--border-color);
-    border-radius: 10px;
-    background: var(--bg-color);
-    color: var(--text-color);
-    outline: none;
-    font-size: 0.95rem;
-    line-height: 1.4;
-}
-
-.notes-list {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    overflow-y: auto;
-    flex-grow: 1;
-    margin-top: 10px;
-    padding: 2px;
-}
-
-.note-item {
-    width: 100%;
-    text-align: left;
-    border: 1px solid var(--border-color);
-    border-radius: 12px;
-    padding: 12px;
-    background: var(--bg-color);
-    transition: background-color 0.2s, border-color 0.2s;
-}
-
-.note-item:hover {
-    background: rgba(59, 130, 246, 0.06);
-    border-color: rgba(59, 130, 246, 0.35);
-}
-
-.note-item-title {
-    font-weight: 600;
-    margin-bottom: 6px;
-    color: var(--text-color);
-}
-
-.note-item-note {
-    color: var(--text-muted);
-    font-size: 0.9rem;
-    white-space: pre-wrap;
-}
-
-.notes-empty {
-    padding: 12px;
-    text-align: center;
-    color: var(--text-muted);
-}
 
 /* Content Images Optimization */
 #content-viewer img,
@@ -1484,13 +1307,4 @@ ruby {
     .slide-in-left {
         animation: none !important;
     }
-}
-
-/* Helper for iOS Selection Menu Suppression */
-span.temp-selection {
-    background-color: rgb(179, 215, 255);
-}
-
-html.dark-mode span.temp-selection {
-    background-color: rgba(69, 142, 247, 0.4);
 }
