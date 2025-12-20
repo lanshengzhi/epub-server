@@ -36,6 +36,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const toolbarThemeBtn = document.getElementById('toolbar-theme');
     const toolbarTypographyBtn = document.getElementById('toolbar-typography');
     const settingsSheet = document.getElementById('reader-settings-sheet');
+    const toolbarBottom = document.querySelector('.reader-toolbar-bottom');
     const sheetFontDecreaseBtn = document.getElementById('sheet-font-decrease');
     const sheetFontIncreaseBtn = document.getElementById('sheet-font-increase');
     const sheetMarginIncreaseBtn = document.getElementById('sheet-margin-increase');
@@ -1198,11 +1199,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (scrollWrapper) {
         scrollWrapper.addEventListener('click', (e) => {
             if (!isSidebarOverlayMode()) return;
-            if (e.defaultPrevented) return;
             const target = e.target;
-            if (target && target.closest) {
-                if (target.closest('a, button, input, textarea, select, label')) return;
-                if (target.closest('img')) return;
+            
+            // Check if click is on settings sheet or its children - don't close if so
+            if (target && target.closest && settingsSheet) {
+                if (target.closest('#reader-settings-sheet')) return;
+            }
+            
+            // Check if click is on toolbar or its children - don't close if so
+            if (target && target.closest && toolbarBottom) {
+                if (target.closest('.reader-toolbar-bottom')) return;
             }
 
             if (hasActiveTextSelectionInContent()) return;
