@@ -59,7 +59,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Config
     const BOOK_KEY = `progress_${bookDir}`;
-    const LEGACY_THEME_KEY = 'theme';
     const TOAST_DURATION_MS = 2000;
     const PROGRESS_VERSION = 3;
     const READING_BLOCK_SELECTOR = 'p, li, blockquote, h1, h2, h3, h4, h5, h6, dt, dd';
@@ -778,20 +777,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
         if (!raw) return null;
 
-        // Backward-compat: previously stored as plain href string.
-        if (!raw.trim().startsWith('{')) {
-            const normalized = normalizeBookPath(raw);
-            const [filePath, anchor] = String(normalized).split('#');
-            return {
-                v: 1,
-                href: filePath,
-                anchor: anchor || null,
-                percent: null,
-                updatedAt: null,
-                chapterTitle: null,
-                spineIndex: null
-            };
-        }
+        const trimmed = raw.trim();
+        if (!trimmed.startsWith('{')) return null;
 
         try {
             const parsed = JSON.parse(raw);
@@ -891,14 +878,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     const READER_PROFILE_DESKTOP = 'desktop';
     const READER_PROFILE_MOBILE = 'mobile';
     const READER_SETTINGS_STORAGE_PREFIX = `readerSettings_v${READER_SETTINGS_VERSION}_`;
-
-    const LEGACY_READER_SETTINGS_KEYS = {
-        fontSize: 'fontSize',
-        maxWidth: 'maxWidth',
-        lineHeight: 'lineHeight',
-        theme: LEGACY_THEME_KEY,
-        fontProfile: 'fontProfile'
-    };
 
     const READER_FONT_PROFILES = ['serif', 'sans', 'mono'];
     const READER_THEME_VALUES = ['light', 'dark'];
@@ -1026,46 +1005,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         return next;
     }
 
-    function readLegacyReaderSettings() {
-        const legacy = {};
-        let found = false;
-
-        const fsRaw = safeLocalStorageGet(LEGACY_READER_SETTINGS_KEYS.fontSize);
-        if (fsRaw != null) {
-            const n = parseInt(fsRaw, 10);
-            if (Number.isFinite(n)) legacy.fontSize = n;
-            found = true;
-        }
-
-        const mwRaw = safeLocalStorageGet(LEGACY_READER_SETTINGS_KEYS.maxWidth);
-        if (mwRaw != null) {
-            const n = parseInt(mwRaw, 10);
-            if (Number.isFinite(n)) legacy.maxWidth = n;
-            found = true;
-        }
-
-        const lhRaw = safeLocalStorageGet(LEGACY_READER_SETTINGS_KEYS.lineHeight);
-        if (lhRaw != null) {
-            const n = parseFloat(lhRaw);
-            if (Number.isFinite(n)) legacy.lineHeight = n;
-            found = true;
-        }
-
-        const themeRaw = safeLocalStorageGet(LEGACY_READER_SETTINGS_KEYS.theme);
-        if (themeRaw != null) {
-            legacy.theme = themeRaw;
-            found = true;
-        }
-
-        const fpRaw = safeLocalStorageGet(LEGACY_READER_SETTINGS_KEYS.fontProfile);
-        if (fpRaw != null) {
-            legacy.fontProfile = fpRaw;
-            found = true;
-        }
-
-        return found ? legacy : null;
-    }
-
     function readReaderSettings(profile) {
         const key = getReaderSettingsStorageKey(profile);
         const raw = safeLocalStorageGet(key);
@@ -1094,16 +1033,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         const hasMobile = !!safeLocalStorageGet(mobileKey);
         if (hasDesktop && hasMobile) return;
 
-        const legacy = readLegacyReaderSettings();
-
         if (!hasDesktop) {
-            const base = Object.assign({}, READER_SETTINGS_DEFAULTS[READER_PROFILE_DESKTOP], legacy || {});
+            const base = Object.assign({}, READER_SETTINGS_DEFAULTS[READER_PROFILE_DESKTOP]);
             safeLocalStorageSet(desktopKey, JSON.stringify(normalizeReaderSettings(base, READER_PROFILE_DESKTOP)));
         }
 
         if (!hasMobile) {
-            let base = Object.assign({}, READER_SETTINGS_DEFAULTS[READER_PROFILE_MOBILE], legacy || {});
-            if (!legacy && hasDesktop) {
+            let base = Object.assign({}, READER_SETTINGS_DEFAULTS[READER_PROFILE_MOBILE]);
+            if (hasDesktop) {
                 base = Object.assign({}, READER_SETTINGS_DEFAULTS[READER_PROFILE_MOBILE], readReaderSettings(READER_PROFILE_DESKTOP));
             }
             safeLocalStorageSet(mobileKey, JSON.stringify(normalizeReaderSettings(base, READER_PROFILE_MOBILE)));

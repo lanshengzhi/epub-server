@@ -121,17 +121,11 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch {}
     applyViewUI();
 
-    function normalizeBooleanPref(value, fallback) {
-        if (value === null || value === undefined) return fallback;
-        const normalized = String(value).trim().toLowerCase();
-        if (!normalized) return fallback;
-        if (normalized === '1' || normalized === 'true' || normalized === 'yes' || normalized === 'on') return true;
-        if (normalized === '0' || normalized === 'false' || normalized === 'no' || normalized === 'off') return false;
-        return fallback;
-    }
-
     try {
-        recentFirst = normalizeBooleanPref(localStorage.getItem(RECENT_FIRST_STORAGE_KEY), true);
+        const storedRecentFirst = localStorage.getItem(RECENT_FIRST_STORAGE_KEY);
+        if (storedRecentFirst !== null) {
+            recentFirst = storedRecentFirst === '1';
+        }
     } catch {}
     if (recentFirstToggle) recentFirstToggle.checked = recentFirst;
 
@@ -146,16 +140,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         if (!raw) return null;
         const trimmed = String(raw).trim();
-        if (!trimmed.startsWith('{')) {
-            return {
-                href: trimmed,
-                anchor: null,
-                percent: null,
-                updatedAt: null,
-                chapterTitle: null,
-                spineIndex: null
-            };
-        }
+        if (!trimmed.startsWith('{')) return null;
         try {
             const parsed = JSON.parse(trimmed);
             if (!parsed || typeof parsed !== 'object') return null;
@@ -793,16 +778,8 @@ document.addEventListener('DOMContentLoaded', () => {
                                 return;
                             }
 
-                            // Backward compatible path: old synchronous response.
-                            if (result.logs) appendUploadConsoleLines(result.logs);
-                            if (result.success) {
-                                setUploadConsoleStatus(t('library.import_success'));
-                                closeModal.style.display = 'block';
-                                loadBooks();
-                            } else {
-                                setUploadConsoleStatus(t('library.import_failed', { error: result.error || t('library.unknown_error') }));
-                                closeModal.style.display = 'block';
-                            }
+                            setUploadConsoleStatus(t('library.import_failed', { error: result.error || t('library.unknown_error') }));
+                            closeModal.style.display = 'block';
                         } catch (e) {
                             setUploadConsoleStatus(t('library.import_failed', { error: t('library.unknown_error') }));
                             appendUploadConsoleLines([e.message]);
