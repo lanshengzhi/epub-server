@@ -7,9 +7,9 @@
         (function () {
             try {
                 const view = localStorage.getItem('library_view');
-                document.documentElement.classList.add(view === 'list' ? 'library-view-list' : 'library-view-grid');
+                if (view === 'list') document.documentElement.classList.add('library-view-list');
             } catch {
-                document.documentElement.classList.add('library-view-grid');
+                document.documentElement.classList.remove('library-view-list');
             }
 
             try {

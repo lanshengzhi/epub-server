@@ -373,44 +373,6 @@ a {
     right: 60px;
 }
 
-/* List View */
-.library-list {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-}
-
-.library-list .book-card {
-    flex-direction: row;
-    min-height: 100px;
-    height: auto;
-    align-items: center;
-}
-
-.library-list .book-cover {
-    height: 100%;
-    width: 80px;
-    flex-shrink: 0;
-}
-
-.library-list .book-info {
-    flex: 1 1 auto;
-    min-width: 0;
-    justify-content: center;
-    padding: 0 110px 0 20px;
-}
-
-.library-list .book-info h3 {
-    font-size: 1.1rem;
-    margin-bottom: 4px;
-}
-
-.library-list .delete-btn {
-    top: 50%;
-    transform: translateY(-50%);
-    right: 15px;
-}
-
 .book-card {
     background-color: var(--card-bg);
     border-radius: 12px;
@@ -419,6 +381,7 @@ a {
     transition: transform 0.2s, box-shadow 0.2s;
     display: flex;
     flex-direction: column;
+    position: relative;
 }
 
 .book-card:hover {
@@ -496,8 +459,7 @@ a {
 }
 
 .reader-toolbar-bottom,
-.reader-settings-sheet,
-.reader-progress-indicator {
+.reader-settings-sheet {
     display: none;
 }
 
@@ -564,38 +526,12 @@ a {
         display: none !important;
     }
 
-    /* Disable legacy mobile settings entry (replaced by bottom toolbar) */
-    .reader-page .mobile-only {
-        display: none !important;
-    }
-
     /* Header is overlay; let container flow with page */
     .reader-container {
         height: 100svh;
         min-height: 0;
         padding-bottom: 0;
     }
-
-    .reader-progress-indicator {
-        display: none !important;
-        /* display: block;
-	        position: fixed;
-	        right: calc(14px + env(safe-area-inset-right, 0px));
-	        bottom: calc(66px + env(safe-area-inset-bottom, 0px));
-	        z-index: 110;
-	        font-size: 12px;
-	        line-height: 1;
-	        color: var(--text-muted);
-	        opacity: 0.78;
-	        pointer-events: none;
-	        user-select: none;
-	        font-variant-numeric: tabular-nums;
-	        transition: opacity 0.2s ease; */
-    }
-
-    /* body.toolbars-visible .reader-progress-indicator {
-	        opacity: 0;
-	    } */
 
     .reader-toolbar-bottom {
         display: flex;
@@ -616,11 +552,6 @@ a {
         pointer-events: auto;
         z-index: 120;
     }
-
-    /* body.toolbars-visible .reader-toolbar-bottom {
-            transform: translateY(0);
-            pointer-events: auto;
-        } */
 
     .reader-toolbar-btn {
         width: 44px;
@@ -803,45 +734,13 @@ a {
     z-index: 10;
 }
 
-.nav-btn {
-    background-color: var(--card-bg);
-    border: 1px solid var(--border-color);
-    padding: 10px 15px;
-    border-radius: 8px;
-    box-shadow: var(--shadow);
-    font-weight: 500;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    transition: all 0.2s;
-}
-
-.nav-btn:hover:not(:disabled) {
-    background-color: var(--primary-color);
-    color: white;
-}
-
-.nav-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-
 /* Responsive */
-/* Mobile Utilities */
-.mobile-only {
-    display: none;
-}
 
 /* Reader Header Settings Group (Desktop / Default) */
 .settings-group {
     display: flex;
     align-items: center;
     gap: 10px;
-}
-
-/* Sidebar Close Button Default */
-#close-sidebar {
-    display: none;
 }
 
 @media (max-width: 768px) {
@@ -858,11 +757,6 @@ a {
 
     .book-card .edit-tags-btn {
         background-color: rgba(0, 0, 0, 0.6);
-    }
-
-    /* Sidebar Close (mobile-friendly footer button + backdrop) */
-    #close-sidebar {
-        display: none;
     }
 
     .sidebar-footer {
@@ -886,42 +780,6 @@ a {
 
     .reader-controls {
         display: none;
-    }
-
-    /* Reader Header Adaptation */
-    .mobile-only {
-        display: flex;
-    }
-
-    .settings-group {
-        display: none;
-        /* Hidden by default on mobile */
-        position: absolute;
-        top: var(--header-total-height);
-        right: 0;
-        background-color: var(--header-bg);
-        border-bottom: 1px solid var(--border-color);
-        border-left: 1px solid var(--border-color);
-        padding: 15px;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        width: auto;
-        min-width: 200px;
-        gap: 15px;
-        z-index: 90;
-    }
-
-    .settings-group.show {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 10px;
-    }
-
-    .settings-group .icon-btn {
-        width: 100%;
-        height: 48px;
-        /* Larger touch target */
-        border-radius: 8px;
-        border: 1px solid var(--border-color);
     }
 
     /* No on-screen prev/next on mobile (use swipe) */
@@ -951,14 +809,6 @@ a {
         padding: var(--pwa-safe-top) 0 calc(var(--reader-toolbar-height) + var(--reader-safe-bottom) + 8px) 0 !important;
         scroll-padding-bottom: calc(var(--reader-toolbar-height) + var(--reader-safe-bottom) + 8px);
         min-height: 100svh;
-    }
-}
-
-/* When bottom toolbar is visible on mobile, add its height */
-@media (max-width: 768px) {
-    body.toolbars-visible.reader-page .iframe-container {
-        padding-bottom: calc(var(--reader-toolbar-height) + var(--reader-safe-bottom) + 8px);
-        scroll-padding-bottom: calc(var(--reader-toolbar-height) + var(--reader-safe-bottom) + 8px);
     }
 }
 
@@ -1429,12 +1279,6 @@ a {
     transform: translateX(-50%) translateY(-2px);
 }
 
-/* Delete Button for Book Card */
-.book-card {
-    position: relative;
-    /* Needed for absolute positioning of delete-btn */
-}
-
 .delete-btn {
     position: absolute;
     top: 10px;
@@ -1551,18 +1395,6 @@ ruby {
     background-color: rgba(0, 0, 0, 0.8);
 }
 
-.library-list .edit-tags-btn {
-
-    top: 50%;
-
-    transform: translateY(-50%);
-
-    right: 60px;
-
-}
-
-
-
 /* Modal Footer & Buttons */
 
 .modal-footer {
@@ -1616,34 +1448,30 @@ ruby {
 
 
 .nav-btn {
-
     border: 1px solid var(--border-color);
-
     padding: 8px 16px;
-
     border-radius: 6px;
-
     background: var(--card-bg);
-
     cursor: pointer;
-
     font-size: 0.95rem;
-
     transition: all 0.2s;
-
     width: auto;
     /* Reset flex adjustments */
-
     height: auto;
-
+    box-shadow: var(--shadow);
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
-
-
-.nav-btn:hover {
-
+.nav-btn:hover:not(:disabled) {
     background: var(--bg-color);
+}
 
+.nav-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 
 

@@ -31,10 +31,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     const nextBtn = document.getElementById('next-chapter');
     const notesBtn = document.getElementById('notes-btn');
     const toggleSidebarBtn = document.getElementById('toggle-sidebar');
-    const closeSidebarBtn = document.getElementById('close-sidebar');
     const closeSidebarBottomBtn = document.getElementById('close-sidebar-bottom');
     const sidebarBackdrop = document.getElementById('sidebar-backdrop');
-    const bottomToolbar = document.getElementById('reader-toolbar-bottom');
     const toolbarTocBtn = document.getElementById('toolbar-toc');
     const toolbarNotesBtn = document.getElementById('toolbar-notes');
     const toolbarThemeBtn = document.getElementById('toolbar-theme');
@@ -46,7 +44,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     const sheetMarginDecreaseBtn = document.getElementById('sheet-margin-decrease');
     const sheetLineHeightDecreaseBtn = document.getElementById('sheet-line-height-decrease');
     const sheetLineHeightIncreaseBtn = document.getElementById('sheet-line-height-increase');
-    const progressIndicator = document.getElementById('reader-progress-indicator');
     const selectionToolbar = document.getElementById('selection-toolbar');
     const annoMenu = document.getElementById('anno-menu');
     const noteModal = document.getElementById('note-modal');
@@ -108,8 +105,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    const topToolbar = document.querySelector('.reader-header');
-    let toolbarsVisible = false;
     let settingsOpen = false;
 
     function setSettingsOpen(isOpen) {
@@ -118,22 +113,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!active) settingsOpen = false;
         document.body.classList.toggle('settings-open', active && settingsOpen);
         if (settingsSheet) settingsSheet.setAttribute('aria-hidden', active && settingsOpen ? 'false' : 'true');
-    }
-
-    function setToolbarsVisible(isVisible) {
-        toolbarsVisible = !!isVisible;
-        const active = isSidebarOverlayMode();
-        const visible = active && toolbarsVisible;
-        if (!active) toolbarsVisible = false;
-
-        document.body.classList.toggle('toolbars-visible', visible);
-        if (bottomToolbar) bottomToolbar.setAttribute('aria-hidden', visible ? 'false' : 'true');
-        if (topToolbar && active) topToolbar.setAttribute('aria-hidden', visible ? 'false' : 'true');
-
-        if (!visible) {
-            setSettingsOpen(false);
-            setSidebarOpen(false);
-        }
     }
 
     // --- Annotations (Highlights / Notes) ---
@@ -1197,46 +1176,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         return Math.max(0, Math.min(1, scrollWrapper.scrollTop / max));
     }
 
-    function getDisplayScrollPercent() {
-        const max = scrollWrapper.scrollHeight - scrollWrapper.clientHeight;
-        if (max <= 0) return 1;
-        return Math.max(0, Math.min(1, scrollWrapper.scrollTop / max));
-    }
-
-    function getDisplayPageProgress() {
-        const viewportH = scrollWrapper.clientHeight;
-        const scrollH = scrollWrapper.scrollHeight;
-        if (!Number.isFinite(viewportH) || !Number.isFinite(scrollH) || viewportH <= 0 || scrollH <= 0) {
-            return { page: 1, totalPages: 1 };
-        }
-        const totalPages = Math.max(1, Math.ceil(scrollH / viewportH));
-        const page = Math.max(1, Math.min(totalPages, Math.floor(scrollWrapper.scrollTop / viewportH) + 1));
-        return { page, totalPages };
-    }
-
-    function getDisplayBookPercent(chapterPercent) {
-        const total = spineItems.length;
-        if (!Number.isFinite(chapterPercent)) return 0;
-        if (!Number.isFinite(total) || total <= 0) return Math.max(0, Math.min(1, chapterPercent));
-        if (!Number.isFinite(currentSpineIndex) || currentSpineIndex < 0) return Math.max(0, Math.min(1, chapterPercent));
-        const value = (currentSpineIndex + chapterPercent) / total;
-        return Math.max(0, Math.min(1, value));
-    }
-
-    let progressIndicatorRaf = null;
-    function updateProgressIndicator() {
-        // Feature disabled
-        return;
-    }
-
-    function scheduleProgressIndicatorUpdate() {
-        if (!progressIndicator || progressIndicatorRaf) return;
-        progressIndicatorRaf = window.requestAnimationFrame(() => {
-            progressIndicatorRaf = null;
-            updateProgressIndicator();
-        });
-    }
-
     function saveReadingProgress({ updateLastReadAt = true } = {}) {
         if (!currentChapterHref) return;
         const patch = { href: currentChapterHref, percent: getScrollPercent() };
@@ -1341,7 +1280,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             // Ensure mode-specific UI is not stuck open across breakpoint changes.
             setSettingsOpen(false);
-            setToolbarsVisible(false);
             setSidebarOpen(false);
 
             applySettings();
@@ -1871,7 +1809,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.documentElement.classList.toggle('dark-mode', isDark);
         contentViewer.style.setProperty('--reader-font', getFontStack(currentFontProfile));
         updateThemeColorMeta();
-        scheduleProgressIndicatorUpdate();
 
         // Update Font UI
         document.querySelectorAll('.font-family-btn').forEach(btn => {
@@ -1964,13 +1901,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         toggleSidebarBtn.addEventListener('click', () => setSidebarOpen(!sidebar.classList.contains('open')));
     }
 
-    if (closeSidebarBtn) closeSidebarBtn.addEventListener('click', () => setSidebarOpen(false));
     if (closeSidebarBottomBtn) closeSidebarBottomBtn.addEventListener('click', () => setSidebarOpen(false));
     if (sidebarBackdrop) sidebarBackdrop.addEventListener('click', () => setSidebarOpen(false));
 
     setSidebarOpen(!!(sidebar && sidebar.classList.contains('open')));
 
-    setToolbarsVisible(false);
     setSettingsOpen(false);
 
     // if (isSidebarOverlayMode() && cameFromLibraryReferrer()) {
@@ -1994,10 +1929,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             // Mobile: Toolbars are resident, tapping content should just close settings/sidebar if open
             if (isSidebarOverlayMode()) {
-                if (settingsGroup && settingsGroup.classList.contains('show')) {
-                    settingsGroup.classList.remove('show');
-                    return;
-                }
                 if (settingsOpen) {
                     setSettingsOpen(false);
                     return;
@@ -2007,25 +1938,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                     return;
                 }
                 return;
-            }
-
-            setToolbarsVisible(!toolbarsVisible);
-        });
-    }
-
-    // Mobile Settings Toggle
-    const settingsToggle = document.getElementById('mobile-settings-toggle');
-    const settingsGroup = document.getElementById('reader-settings');
-    if (settingsToggle && settingsGroup) {
-        settingsToggle.onclick = (e) => {
-            e.stopPropagation();
-            settingsGroup.classList.toggle('show');
-        };
-        document.addEventListener('click', (e) => {
-            if (settingsGroup.classList.contains('show') &&
-                !settingsGroup.contains(e.target) &&
-                !settingsToggle.contains(e.target)) {
-                settingsGroup.classList.remove('show');
             }
         });
     }
@@ -2463,14 +2375,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Persist reading position within long chapters
     scrollWrapper.addEventListener('scroll', () => {
         scheduleProgressSave(false, { updateLastReadAt: true });
-        scheduleProgressIndicatorUpdate();
     }, { passive: true });
     document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'hidden') scheduleProgressSave(true, { updateLastReadAt: true });
     });
     window.addEventListener('beforeunload', () => scheduleProgressSave(true, { updateLastReadAt: true }));
     window.addEventListener('resize', () => {
-        scheduleProgressIndicatorUpdate();
         maybeSwitchReaderProfile();
     });
 

@@ -89,7 +89,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function applyViewUI() {
         document.documentElement.classList.toggle('library-view-list', currentView === 'list');
-        document.documentElement.classList.toggle('library-view-grid', currentView === 'grid');
 
         if (viewGridBtn && viewListBtn) {
             viewGridBtn.classList.toggle('active', currentView === 'grid');
@@ -98,7 +97,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (!bookList) return;
         bookList.classList.toggle('library-grid', currentView === 'grid');
-        bookList.classList.toggle('library-list', currentView === 'list');
     }
 
     function setView(view, { persist = true, rerender = true } = {}) {
