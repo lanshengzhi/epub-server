@@ -30,7 +30,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     const prevBtn = document.getElementById('prev-chapter');
     const nextBtn = document.getElementById('next-chapter');
     const toggleSidebarBtn = document.getElementById('toggle-sidebar');
-    const closeSidebarBottomBtn = document.getElementById('close-sidebar-bottom');
     const sidebarBackdrop = document.getElementById('sidebar-backdrop');
     const toolbarTocBtn = document.getElementById('toolbar-toc');
     const toolbarThemeBtn = document.getElementById('toolbar-theme');
@@ -1185,7 +1184,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         toggleSidebarBtn.addEventListener('click', () => setSidebarOpen(!sidebar.classList.contains('open')));
     }
 
-    if (closeSidebarBottomBtn) closeSidebarBottomBtn.addEventListener('click', () => setSidebarOpen(false));
     if (sidebarBackdrop) sidebarBackdrop.addEventListener('click', () => setSidebarOpen(false));
 
     setSidebarOpen(!!(sidebar && sidebar.classList.contains('open')));
