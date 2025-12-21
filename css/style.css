@@ -511,22 +511,20 @@ a {
         display: none !important;
     }
 
-    /* Header is overlay; let container flow with page */
+    /* Mobile: the bottom toolbar should TAKE SPACE (not overlay the content). */
     .reader-container {
-        height: 100svh;
+        height: auto;
+        flex: 1 1 auto;
         min-height: 0;
         padding-bottom: 0;
     }
 
     .reader-toolbar-bottom {
         display: flex;
-        position: fixed;
-        left: 0;
-        right: 0;
-        bottom: 0;
+        position: relative;
         /* Match native iOS tab bar: background reaches Home Indicator area, icons stay in base height. */
-        height: calc(var(--reader-toolbar-height) + env(safe-area-inset-bottom, 0px));
-        padding: 0 16px env(safe-area-inset-bottom, 0px);
+        height: calc(var(--reader-toolbar-height) + var(--reader-safe-bottom));
+        padding: 0 16px var(--reader-safe-bottom);
         background-color: var(--header-bg);
         border-top: 1px solid var(--border-color);
         box-shadow: 0 -6px 18px rgba(0, 0, 0, 0.06);
@@ -535,7 +533,7 @@ a {
         transform: none;
         /* Always visible */
         pointer-events: auto;
-        z-index: 120;
+        z-index: auto;
     }
 
     .reader-toolbar-btn {
@@ -792,9 +790,10 @@ a {
 
 @media (max-width: 768px) {
     .reader-page .iframe-container {
-        padding: var(--pwa-safe-top) 0 calc(var(--reader-toolbar-height) + var(--reader-safe-bottom) + 8px) 0 !important;
-        scroll-padding-bottom: calc(var(--reader-toolbar-height) + var(--reader-safe-bottom) + 8px);
-        min-height: 100svh;
+        /* Bottom toolbar takes layout space; no need to reserve extra scroll padding. */
+        padding: var(--pwa-safe-top) 0 0 0 !important;
+        scroll-padding-bottom: 0;
+        min-height: 0;
     }
 }
 
