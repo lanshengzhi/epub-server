@@ -8,6 +8,50 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const bookList = document.getElementById('book-list');
     const themeToggle = document.getElementById('theme-toggle');
+
+    // --- Theme ---
+    const THEME_STORAGE_KEY = 'theme';
+    let currentTheme = 'light';
+
+    function updateThemeIcon(isDark) {
+        if (!themeToggle) return;
+        themeToggle.innerHTML = isDark ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
+    }
+
+    function applyTheme(theme) {
+        const isDark = theme === 'dark';
+        document.documentElement.classList.toggle('dark-mode', isDark);
+        updateThemeIcon(isDark);
+    }
+
+    function toggleTheme() {
+        currentTheme = currentTheme === 'dark' ? 'light' : 'dark';
+        try {
+            localStorage.setItem(THEME_STORAGE_KEY, currentTheme);
+        } catch {}
+        applyTheme(currentTheme);
+    }
+
+    if (themeToggle) {
+        themeToggle.addEventListener('click', toggleTheme);
+    }
+
+    // Restore theme on load
+    function initializeTheme() {
+        try {
+            const storedTheme = localStorage.getItem(THEME_STORAGE_KEY);
+            // Prefer stored, fallback to system preference
+            if (storedTheme) {
+                currentTheme = storedTheme === 'dark' ? 'dark' : 'light';
+            } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                currentTheme = 'dark';
+            } else {
+                currentTheme = 'light';
+            }
+        } catch {}
+        applyTheme(currentTheme);
+    }
+    initializeTheme();
     const importBtn = document.getElementById('import-btn');
     const fileInput = document.getElementById('file-input');
     const uploadModal = document.getElementById('upload-modal');
@@ -823,10 +867,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-
-    function updateThemeIcon(isDark) {
-        themeToggle.innerHTML = isDark ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
-    }
 
     // --- Delete Book Logic ---
     async function deleteBook(bookDir) {
