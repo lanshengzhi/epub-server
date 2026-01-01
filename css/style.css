@@ -788,6 +788,15 @@ a {
     min-width: 0;
     flex-shrink: 1;
     font-family: var(--reader-font);
+    /* WeChat Read style: word-boundary wrapping only, no hyphenation */
+    /* Justified text (both left and right aligned) */
+    overflow-wrap: normal;
+    word-break: normal;
+    hyphens: none;
+    /* Font rendering optimization for better readability */
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
 #content-viewer:lang(zh) {
@@ -797,6 +806,16 @@ a {
 #content-viewer:lang(zh) :where(p, li, blockquote, dd, dt) {
     text-align: justify;
     text-justify: inter-ideograph;
+}
+
+/* English text: WeChat Read style - justified (both left and right aligned) */
+/* Word-boundary wrapping with inter-word spacing adjustment */
+#content-viewer:not(:lang(zh)) :where(p, li, blockquote, dd, dt) {
+    text-align: justify;
+    text-justify: inter-word;
+    overflow-wrap: normal;
+    word-break: normal;
+    hyphens: none;
 }
 
 #content-viewer:lang(zh-Hant),
